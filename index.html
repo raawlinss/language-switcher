@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kişisel Bildirim Sistemi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        
+        .notification {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.3s ease-in forwards;
+        }
+        
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">🔔 Kişisel Bildirim Sistemi</h1>
+            <p class="text-blue-100">İsminizi girin ve bildirim saatlerinizi ayarlayın</p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
+            <!-- Name Input Section -->
+            <div class="mb-8">
+                <label class="block text-gray-700 text-lg font-semibold mb-3">👤 İsminiz</label>
+                <input type="text" id="userName" placeholder="İsminizi girin..." 
+                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-lg">
+            </div>
+
+            <!-- Time Input Section -->
+            <div class="mb-8">
+                <label class="block text-gray-700 text-lg font-semibold mb-3">⏰ Bildirim Saati Ekle</label>
+                <div class="flex gap-3">
+                    <input type="time" id="notificationTime" 
+                           class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-lg">
+                    <button onclick="addNotification()" 
+                            class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+                        Ekle
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notification List -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">📋 Aktif Bildirimler</h3>
+                <div id="notificationList" class="space-y-3">
+                    <div class="text-gray-500 text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                        Henüz bildirim eklenmedi
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permission Button -->
+            <div class="text-center mb-6">
+                <button onclick="requestPermission()" id="permissionBtn"
+                        class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-semibold transition-colors">
+                    🔔 Bildirim İzni Ver
+                </button>
+            </div>
+
+            <!-- Status -->
+            <div id="status" class="text-center text-sm text-gray-600"></div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notificationToast" class="fixed top-4 right-4 bg-white border-l-4 border-purple-500 rounded-lg shadow-lg p-4 max-w-sm hidden notification">
+        <div class="flex items-center">
+            <div class="text-2xl mr-3">🔔</div>
+            <div>
+                <div class="font-semibold text-gray-800" id="toastTitle">Bildirim</div>
+                <div class="text-gray-600" id="toastMessage">Mesaj</div>
+            </div>
+            <button onclick="closeToast()" class="ml-auto text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+    </div>
+
+    <script>
+        let notifications = [];
+        let activeIntervals = [];
+
+        // Check notification permission on load
+        window.addEventListener('load', function() {
+            updatePermissionStatus();
+            loadNotifications();
+        });
+
+        function requestPermission() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(function(permission) {
+                    updatePermissionStatus();
+                    if (permission === 'granted') {
+                        showToast('Bildirim İzni Verildi!', 'Artık size bildirim gönderebiliriz 🎉');
+                    }
+                });
+            } else {
+                showToast('Uyarı', 'Tarayıcınız bildirimleri desteklemiyor');
+            }
+        }
+
+        function updatePermissionStatus() {
+            const statusEl = document.getElementById('status');
+            const permissionBtn = document.getElementById('permissionBtn');
+            
+            if ('Notification' in window) {
+                if (Notification.permission === 'granted') {
+                    statusEl.textContent = '✅ Bildirim izni verildi - Sistem aktif';
+                    statusEl.className = 'text-center text-sm text-green-600';
+                    permissionBtn.style.display = 'none';
+                } else if (Notification.permission === 'denied') {
+                    statusEl.textContent = '❌ Bildirim izni reddedildi - Tarayıcı ayarlarından açabilirsiniz';
+                    statusEl.className = 'text-center text-sm text-red-600';
+                } else {
+                    statusEl.textContent = '⚠️ Bildirim izni bekleniyor';
+                    statusEl.className = 'text-center text-sm text-yellow-600';
+                }
+            }
+        }
+
+        function addNotification() {
+            const userName = document.getElementById('userName').value.trim();
+            const time = document.getElementById('notificationTime').value;
+            
+            if (!userName) {
+                showToast('Hata', 'Lütfen isminizi girin');
+                return;
+            }
+            
+            if (!time) {
+                showToast('Hata', 'Lütfen bir saat seçin');
+                return;
+            }
+
+            // Check if time already exists
+            if (notifications.some(n => n.time === time)) {
+                showToast('Hata', 'Bu saat için zaten bildirim var');
+                return;
+            }
+
+            const notification = {
+                id: Date.now(),
+                name: userName,
+                time: time,
+                active: true
+            };
+
+            notifications.push(notification);
+            saveNotifications();
+            renderNotifications();
+            scheduleNotification(notification);
+            
+            // Clear inputs
+            document.getElementById('notificationTime').value = '';
+            
+            showToast('Başarılı!', `${time} için bildirim eklendi`);
+        }
+
+        function removeNotification(id) {
+            notifications = notifications.filter(n => n.id !== id);
+            
+            // Clear existing interval for this notification
+            activeIntervals = activeIntervals.filter(interval => {
+                if (interval.id === id) {
+                    clearInterval(interval.intervalId);
+                    return false;
+                }
+                return true;
+            });
+            
+            saveNotifications();
+            renderNotifications();
+            showToast('Silindi', 'Bildirim kaldırıldı');
+        }
+
+        function toggleNotification(id) {
+            const notification = notifications.find(n => n.id === id);
+            if (notification) {
+                notification.active = !notification.active;
+                saveNotifications();
+                renderNotifications();
+                
+                if (notification.active) {
+                    scheduleNotification(notification);
+                    showToast('Aktif', 'Bildirim açıldı');
+                } else {
+                    // Remove from active intervals
+                    activeIntervals = activeIntervals.filter(interval => {
+                        if (interval.id === id) {
+                            clearInterval(interval.intervalId);
+                            return false;
+                        }
+                        return true;
+                    });
+                    showToast('Pasif', 'Bildirim kapatıldı');
+                }
+            }
+        }
+
+        function scheduleNotification(notification) {
+            if (!notification.active) return;
+            
+            // Clear existing interval for this notification
+            activeIntervals = activeIntervals.filter(interval => {
+                if (interval.id === notification.id) {
+                    clearInterval(interval.intervalId);
+                    return false;
+                }
+                return true;
+            });
+
+            const intervalId = setInterval(() => {
+                const now = new Date();
+                const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
+                                  now.getMinutes().toString().padStart(2, '0');
+                
+                if (currentTime === notification.time && notification.active) {
+                    sendNotification(notification);
+                }
+            }, 60000); // Check every minute
+
+            activeIntervals.push({
+                id: notification.id,
+                intervalId: intervalId
+            });
+        }
+
+        function sendNotification(notification) {
+            const message = `Merhaba ${notification.name}! Saat ${notification.time} oldu 🕐`;
+            
+            // Browser notification
+            if (Notification.permission === 'granted') {
+                new Notification('Kişisel Bildirim', {
+                    body: message,
+                    icon: '🔔',
+                    tag: 'personal-notification'
+                });
+            }
+            
+            // In-page toast
+            showToast(`Merhaba ${notification.name}!`, `Saat ${notification.time} oldu 🕐`);
+        }
+
+        function renderNotifications() {
+            const listEl = document.getElementById('notificationList');
+            
+            if (notifications.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-gray-500 text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                        Henüz bildirim eklenmedi
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = notifications.map(notification => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border">
+                    <div class="flex items-center space-x-4">
+                        <div class="text-2xl">${notification.active ? '🔔' : '🔕'}</div>
+                        <div>
+                            <div class="font-semibold text-gray-800">${notification.name}</div>
+                            <div class="text-gray-600">${notification.time}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleNotification(${notification.id})" 
+                                class="px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                                    notification.active 
+                                        ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
+                                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                }">
+                            ${notification.active ? 'Duraklat' : 'Aktifleştir'}
+                        </button>
+                        <button onclick="removeNotification(${notification.id})" 
+                                class="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors">
+                            Sil
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showToast(title, message) {
+            const toast = document.getElementById('notificationToast');
+            const titleEl = document.getElementById('toastTitle');
+            const messageEl = document.getElementById('toastMessage');
+            
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                closeToast();
+            }, 5000);
+        }
+
+        function closeToast() {
+            const toast = document.getElementById('notificationToast');
+            toast.classList.add('fade-out');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                toast.classList.remove('fade-out');
+            }, 300);
+        }
+
+        function saveNotifications() {
+            localStorage.setItem('personalNotifications', JSON.stringify(notifications));
+        }
+
+        function loadNotifications() {
+            const saved = localStorage.getItem('personalNotifications');
+            if (saved) {
+                notifications = JSON.parse(saved);
+                renderNotifications();
+                
+                // Reschedule all active notifications
+                notifications.forEach(notification => {
+                    if (notification.active) {
+                        scheduleNotification(notification);
+                    }
+                });
+            }
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9882827984624eff',t:'MTc1OTM5MDM4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
