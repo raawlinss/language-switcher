@@ -163,53 +163,148 @@
         let notifications = [];
         let activeIntervals = [];
         let logs = [];
+        let swRegistration = null;
+        let isSubscribed = false;
 
-        // Register Service Worker for background notifications
-        if ('serviceWorker' in navigator) {
+        // VAPID keys for push notifications (in real app, keep private key secret)
+        const applicationServerPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa40HcCWLEw6_MzA70HtIeJqbFJDstk5_NjvQoaq30cINhw_7b5vxrHZNjPlQ4';
+
+        function urlB64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        // Register Service Worker for push notifications
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
             navigator.serviceWorker.register('data:application/javascript;base64,' + btoa(`
-                self.addEventListener('message', function(event) {
-                    if (event.data && event.data.type === 'SCHEDULE_NOTIFICATION') {
-                        const { title, body, time, id } = event.data;
-                        
-                        // Calculate delay until notification time
-                        const now = new Date();
-                        const [hours, minutes] = time.split(':');
-                        const notificationTime = new Date();
-                        notificationTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-                        
-                        // If time has passed today, schedule for tomorrow
-                        if (notificationTime <= now) {
-                            notificationTime.setDate(notificationTime.getDate() + 1);
+                // Service Worker for Push Notifications
+                
+                self.addEventListener('push', function(event) {
+                    console.log('Push event received:', event);
+                    
+                    let notificationData = {
+                        title: '⏰ Hatırlatma Zamanı!',
+                        body: 'Bildiriminiz var',
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS43VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                        badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS43VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                        tag: 'personal-reminder',
+                        requireInteraction: true,
+                        actions: [
+                            { action: 'view', title: '👀 Görüntüle' },
+                            { action: 'close', title: '❌ Kapat' }
+                        ],
+                        data: {
+                            url: '/'
                         }
-                        
-                        const delay = notificationTime.getTime() - now.getTime();
-                        
-                        setTimeout(() => {
-                            self.registration.showNotification(title, {
-                                body: body,
-                                icon: '/favicon.ico',
-                                badge: '/favicon.ico',
-                                tag: 'notification-' + id,
-                                requireInteraction: true,
-                                actions: [
-                                    { action: 'close', title: 'Kapat' }
-                                ]
-                            });
-                        }, delay);
+                    };
+                    
+                    if (event.data) {
+                        try {
+                            const data = event.data.json();
+                            notificationData = { ...notificationData, ...data };
+                        } catch (e) {
+                            console.log('Push data parse error:', e);
+                        }
                     }
+                    
+                    event.waitUntil(
+                        self.registration.showNotification(notificationData.title, notificationData)
+                    );
                 });
                 
                 self.addEventListener('notificationclick', function(event) {
+                    console.log('Notification clicked:', event);
                     event.notification.close();
+                    
+                    if (event.action === 'close') {
+                        return;
+                    }
+                    
                     event.waitUntil(
-                        clients.openWindow('/')
+                        clients.matchAll({ type: 'window' }).then(function(clientList) {
+                            for (let i = 0; i < clientList.length; i++) {
+                                const client = clientList[i];
+                                if (client.url === '/' && 'focus' in client) {
+                                    return client.focus();
+                                }
+                            }
+                            if (clients.openWindow) {
+                                return clients.openWindow('/');
+                            }
+                        })
                     );
                 });
+                
+                self.addEventListener('message', function(event) {
+                    if (event.data && event.data.type === 'SCHEDULE_NOTIFICATION') {
+                        const { title, body, time, id, dailyRepeat } = event.data;
+                        
+                        function scheduleNotification() {
+                            const now = new Date();
+                            const [hours, minutes] = time.split(':');
+                            const notificationTime = new Date();
+                            notificationTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                            
+                            // If time has passed today, schedule for tomorrow
+                            if (notificationTime <= now) {
+                                notificationTime.setDate(notificationTime.getDate() + 1);
+                            }
+                            
+                            const delay = notificationTime.getTime() - now.getTime();
+                            
+                            setTimeout(() => {
+                                self.registration.showNotification(title, {
+                                    body: body,
+                                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS43VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                                    badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS3VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                                    tag: 'notification-' + id,
+                                    requireInteraction: true,
+                                    actions: [
+                                        { action: 'view', title: '👀 Görüntüle' },
+                                        { action: 'close', title: '❌ Kapat' }
+                                    ]
+                                });
+                                
+                                // If daily repeat, schedule next day
+                                if (dailyRepeat) {
+                                    scheduleNotification();
+                                }
+                            }, delay);
+                        }
+                        
+                        scheduleNotification();
+                    }
+                });
             `)).then(function(registration) {
+                swRegistration = registration;
                 addLog('Service Worker başarıyla kaydedildi', 'success');
+                
+                // Check if already subscribed
+                return registration.pushManager.getSubscription();
+            }).then(function(subscription) {
+                isSubscribed = !(subscription === null);
+                updateSubscriptionStatus();
+                
+                if (isSubscribed) {
+                    addLog('Push aboneliği zaten aktif', 'success');
+                } else {
+                    addLog('Push aboneliği bekleniyor', 'info');
+                }
             }).catch(function(error) {
                 addLog('Service Worker kaydedilemedi: ' + error.message, 'error');
             });
+        } else {
+            addLog('Push notifications desteklenmiyor', 'error');
         }
 
         // Check notification permission on load
@@ -217,7 +312,14 @@
             updatePermissionStatus();
             loadNotifications();
             loadLogs();
-            addLog('Sistem başlatıldı', 'info');
+            addLog('Sistem başlatıldı - Push notification sistemi aktif', 'info');
+            
+            // Auto-subscribe if permission already granted
+            if (Notification.permission === 'granted' && !isSubscribed) {
+                setTimeout(() => {
+                    subscribeUser();
+                }, 2000);
+            }
         });
 
         function requestPermission() {
@@ -234,15 +336,14 @@
                     
                     if (permission === 'granted') {
                         addLog('Bildirim izni verildi', 'success');
+                        
+                        // Subscribe to push notifications
+                        subscribeUser();
+                        
                         showToast('Bildirim İzni Verildi!', 'Artık size bildirim gönderebiliriz 🎉');
                         // Send a test notification
                         setTimeout(() => {
-                            new Notification('Test Bildirimi', {
-                                body: 'Bildirimler başarıyla aktif edildi! 🎉',
-                                icon: '🔔',
-                                tag: 'test-notification'
-                            });
-                            addLog('Test bildirimi gönderildi', 'info');
+                            sendTestNotification();
                         }, 1000);
                     } else if (permission === 'denied') {
                         addLog('Bildirim izni reddedildi', 'error');
@@ -262,6 +363,57 @@
             } else {
                 addLog('Tarayıcı bildirimleri desteklemiyor', 'error');
                 showToast('Uyarı', 'Tarayıcınız bildirimleri desteklemiyor');
+            }
+        }
+
+        function subscribeUser() {
+            if (!swRegistration) {
+                addLog('Service Worker henüz hazır değil', 'error');
+                return;
+            }
+
+            const applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
+            
+            swRegistration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: applicationServerKey
+            }).then(function(subscription) {
+                addLog('Push aboneliği başarılı', 'success');
+                isSubscribed = true;
+                updateSubscriptionStatus();
+                
+                // Store subscription (in real app, send to server)
+                localStorage.setItem('pushSubscription', JSON.stringify(subscription));
+                
+            }).catch(function(err) {
+                addLog('Push aboneliği hatası: ' + err.message, 'error');
+                isSubscribed = false;
+                updateSubscriptionStatus();
+            });
+        }
+
+        function updateSubscriptionStatus() {
+            // This function can be used to update UI based on subscription status
+            if (isSubscribed) {
+                addLog('Push bildirimleri aktif - Haber sitesi gibi çalışıyor', 'success');
+            }
+        }
+
+        function sendTestNotification() {
+            // Send via Service Worker
+            if (swRegistration && swRegistration.active) {
+                swRegistration.showNotification('🎉 Test Bildirimi', {
+                    body: 'Push bildirimleri başarıyla aktif edildi! Artık haber sitesi gibi çalışıyor.',
+                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS43VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                    badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS3VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                    tag: 'test-notification',
+                    requireInteraction: true,
+                    actions: [
+                        { action: 'view', title: '👀 Görüntüle' },
+                        { action: 'close', title: '❌ Kapat' }
+                    ]
+                });
+                addLog('Test push bildirimi gönderildi', 'info');
             }
         }
 
@@ -424,32 +576,52 @@
         }
 
         function scheduleServiceWorkerNotification(notification) {
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({
+            if ('serviceWorker' in navigator && swRegistration && swRegistration.active) {
+                swRegistration.active.postMessage({
                     type: 'SCHEDULE_NOTIFICATION',
                     title: '⏰ Hatırlatma Zamanı!',
                     body: notification.name,
                     time: notification.time,
-                    id: notification.id
+                    id: notification.id,
+                    dailyRepeat: notification.dailyRepeat
                 });
-                addLog(`Service Worker bildirimi planlandı: ${notification.time}`, 'info');
+                addLog(`Service Worker bildirimi planlandı: ${notification.time} - ${notification.name}`, 'info');
+            } else {
+                addLog('Service Worker henüz hazır değil, bildirim planlanamadı', 'warning');
             }
         }
 
         function sendNotification(notification) {
-            const message = `${notification.name} - Saat ${notification.time} 🕐`;
+            const message = `${notification.name}`;
             
-            // Browser notification
-            if (Notification.permission === 'granted') {
+            // Send via Service Worker (like news sites)
+            if (swRegistration && swRegistration.active && Notification.permission === 'granted') {
+                swRegistration.showNotification('⏰ Hatırlatma Zamanı!', {
+                    body: message,
+                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS3VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                    badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS-VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                    tag: 'personal-notification-' + notification.id,
+                    requireInteraction: true,
+                    actions: [
+                        { action: 'view', title: '👀 Görüntüle' },
+                        { action: 'close', title: '❌ Kapat' }
+                    ],
+                    vibrate: [200, 100, 200], // Mobile vibration
+                    silent: false
+                });
+                addLog(`Push bildirimi gönderildi: ${notification.name}`, 'success');
+            } else if (Notification.permission === 'granted') {
+                // Fallback to regular notification
                 new Notification('⏰ Hatırlatma Zamanı!', {
                     body: message,
                     icon: '🔔',
-                    tag: 'personal-notification'
+                    tag: 'personal-notification-' + notification.id,
+                    requireInteraction: true
                 });
-                addLog(`Bildirim gönderildi: ${notification.name}`, 'success');
+                addLog(`Standart bildirim gönderildi: ${notification.name}`, 'success');
             }
             
-            // Check if mobile device
+            // Check if mobile device for in-app notification
             const isMobile = window.innerWidth <= 768;
             
             if (isMobile) {
@@ -643,5 +815,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98838c44e1473438',t:'MTc1OTQwMTI3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98846395b531805b',t:'MTc1OTQxMDA5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
