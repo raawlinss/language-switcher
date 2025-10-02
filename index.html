@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Kişisel Bildirim Sistemi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -35,43 +38,70 @@
                 transform: translateX(100%);
             }
         }
+        
+        /* Mobile notification styles */
+        @media (max-width: 768px) {
+            .mobile-notification {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 16px;
+                z-index: 9999;
+                transform: translateY(-100%);
+                transition: transform 0.3s ease-out;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            
+            .mobile-notification.show {
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-4 sm:py-8">
         <!-- Header -->
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-white mb-2">🔔 Kişisel Bildirim Sistemi</h1>
-            <p class="text-blue-100">İsminizi girin ve bildirim saatlerinizi ayarlayın</p>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">🔔 Bildirim Sistemi</h1>
+            <p class="text-gray-600">Notlarınızı zamanında hatırlayın</p>
         </div>
 
         <!-- Main Card -->
-        <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
-            <!-- Name Input Section -->
-            <div class="mb-8">
-                <label class="block text-gray-700 text-lg font-semibold mb-3">👤 İsminiz</label>
-                <input type="text" id="userName" placeholder="İsminizi girin..." 
-                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-lg">
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+            <!-- Note Input Section -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">📝 Bildirim Notu</label>
+                <input type="text" id="userName" placeholder="Örn: İlaç içmeyi unutma, Su iç, Egzersiz zamanı..." 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
             </div>
 
             <!-- Time Input Section -->
-            <div class="mb-8">
-                <label class="block text-gray-700 text-lg font-semibold mb-3">⏰ Bildirim Saati Ekle</label>
-                <div class="flex gap-3">
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">⏰ Bildirim Saati</label>
+                <div class="space-y-3">
                     <input type="time" id="notificationTime" 
-                           class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-lg">
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                    
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="dailyRepeat" class="w-4 h-4 text-blue-600">
+                        <label for="dailyRepeat" class="text-gray-700">📅 Her gün tekrarla</label>
+                    </div>
+                    
                     <button onclick="addNotification()" 
-                            class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
-                        Ekle
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-semibold">
+                        Bildirim Ekle
                     </button>
                 </div>
             </div>
 
             <!-- Notification List -->
-            <div class="mb-8">
+            <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-700 mb-4">📋 Aktif Bildirimler</h3>
                 <div id="notificationList" class="space-y-3">
-                    <div class="text-gray-500 text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                    <div class="text-gray-500 text-center py-8 border border-dashed border-gray-300 rounded-lg">
                         Henüz bildirim eklenmedi
                     </div>
                 </div>
@@ -80,7 +110,7 @@
             <!-- Permission Button -->
             <div class="text-center mb-6">
                 <button onclick="requestPermission()" id="permissionBtn"
-                        class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-semibold transition-colors">
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold">
                     🔔 Bildirim İzni Ver
                 </button>
             </div>
@@ -91,7 +121,7 @@
     </div>
 
     <!-- Notification Toast -->
-    <div id="notificationToast" class="fixed top-4 right-4 bg-white border-l-4 border-purple-500 rounded-lg shadow-lg p-4 max-w-sm hidden notification">
+    <div id="notificationToast" class="fixed top-4 right-4 bg-white border-l-4 border-blue-500 rounded-lg shadow-lg p-4 max-w-sm hidden notification">
         <div class="flex items-center">
             <div class="text-2xl mr-3">🔔</div>
             <div>
@@ -99,6 +129,20 @@
                 <div class="text-gray-600" id="toastMessage">Mesaj</div>
             </div>
             <button onclick="closeToast()" class="ml-auto text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+    </div>
+
+    <!-- Mobile Notification -->
+    <div id="mobileNotification" class="mobile-notification">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="text-2xl mr-3">🔔</div>
+                <div>
+                    <div class="font-semibold" id="mobileTitle">Hatırlatma</div>
+                    <div class="text-sm opacity-90" id="mobileMessage">Mesaj</div>
+                </div>
+            </div>
+            <button onclick="closeMobileNotification()" class="text-white opacity-75 hover:opacity-100 ml-4">✕</button>
         </div>
     </div>
 
@@ -114,11 +158,37 @@
 
         function requestPermission() {
             if ('Notification' in window) {
+                // Show loading state
+                const permissionBtn = document.getElementById('permissionBtn');
+                const originalText = permissionBtn.textContent;
+                permissionBtn.textContent = '⏳ İzin bekleniyor...';
+                permissionBtn.disabled = true;
+                
                 Notification.requestPermission().then(function(permission) {
                     updatePermissionStatus();
+                    permissionBtn.disabled = false;
+                    
                     if (permission === 'granted') {
                         showToast('Bildirim İzni Verildi!', 'Artık size bildirim gönderebiliriz 🎉');
+                        // Send a test notification
+                        setTimeout(() => {
+                            new Notification('Test Bildirimi', {
+                                body: 'Bildirimler başarıyla aktif edildi! 🎉',
+                                icon: '🔔',
+                                tag: 'test-notification'
+                            });
+                        }, 1000);
+                    } else if (permission === 'denied') {
+                        showToast('İzin Reddedildi', 'Tarayıcı ayarlarından bildirimleri açabilirsiniz');
+                        permissionBtn.textContent = originalText;
+                    } else {
+                        permissionBtn.textContent = originalText;
                     }
+                }).catch(function(error) {
+                    console.error('Permission request failed:', error);
+                    permissionBtn.textContent = originalText;
+                    permissionBtn.disabled = false;
+                    showToast('Hata', 'Bildirim izni alınamadı');
                 });
             } else {
                 showToast('Uyarı', 'Tarayıcınız bildirimleri desteklemiyor');
@@ -147,9 +217,10 @@
         function addNotification() {
             const userName = document.getElementById('userName').value.trim();
             const time = document.getElementById('notificationTime').value;
+            const dailyRepeat = document.getElementById('dailyRepeat').checked;
             
             if (!userName) {
-                showToast('Hata', 'Lütfen isminizi girin');
+                showToast('Hata', 'Lütfen bildirim notunuzu yazın');
                 return;
             }
             
@@ -158,9 +229,9 @@
                 return;
             }
 
-            // Check if time already exists
-            if (notifications.some(n => n.time === time)) {
-                showToast('Hata', 'Bu saat için zaten bildirim var');
+            // Check if time already exists with same repeat setting
+            if (notifications.some(n => n.time === time && n.dailyRepeat === dailyRepeat)) {
+                showToast('Hata', 'Bu saat için zaten aynı tipte bildirim var');
                 return;
             }
 
@@ -168,7 +239,9 @@
                 id: Date.now(),
                 name: userName,
                 time: time,
-                active: true
+                dailyRepeat: dailyRepeat,
+                active: true,
+                lastSent: null
             };
 
             notifications.push(notification);
@@ -178,8 +251,10 @@
             
             // Clear inputs
             document.getElementById('notificationTime').value = '';
+            document.getElementById('dailyRepeat').checked = false;
             
-            showToast('Başarılı!', `${time} için bildirim eklendi`);
+            const repeatText = dailyRepeat ? ' (Her gün)' : ' (Tek seferlik)';
+            showToast('Başarılı!', `${time} için bildirim eklendi${repeatText}`);
         }
 
         function removeNotification(id) {
@@ -239,11 +314,33 @@
                 const now = new Date();
                 const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
                                   now.getMinutes().toString().padStart(2, '0');
+                const today = now.toDateString();
                 
                 if (currentTime === notification.time && notification.active) {
-                    sendNotification(notification);
+                    // Check if we should send the notification
+                    if (notification.dailyRepeat) {
+                        // For daily notifications, check if we already sent today
+                        if (notification.lastSent !== today) {
+                            sendNotification(notification);
+                            notification.lastSent = today;
+                            saveNotifications();
+                        }
+                    } else {
+                        // For one-time notifications, send once and deactivate
+                        if (!notification.lastSent) {
+                            sendNotification(notification);
+                            notification.lastSent = today;
+                            notification.active = false;
+                            saveNotifications();
+                            renderNotifications();
+                            
+                            // Remove from active intervals since it's now inactive
+                            activeIntervals = activeIntervals.filter(interval => interval.id !== notification.id);
+                            clearInterval(intervalId);
+                        }
+                    }
                 }
-            }, 60000); // Check every minute
+            }, 30000); // Check every 30 seconds for better accuracy
 
             activeIntervals.push({
                 id: notification.id,
@@ -252,19 +349,27 @@
         }
 
         function sendNotification(notification) {
-            const message = `Merhaba ${notification.name}! Saat ${notification.time} oldu 🕐`;
+            const message = `${notification.name} - Saat ${notification.time} 🕐`;
             
             // Browser notification
             if (Notification.permission === 'granted') {
-                new Notification('Kişisel Bildirim', {
+                new Notification('⏰ Hatırlatma Zamanı!', {
                     body: message,
                     icon: '🔔',
                     tag: 'personal-notification'
                 });
             }
             
-            // In-page toast
-            showToast(`Merhaba ${notification.name}!`, `Saat ${notification.time} oldu 🕐`);
+            // Check if mobile device
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile) {
+                // Show mobile notification
+                showMobileNotification('⏰ Hatırlatma Zamanı!', notification.name);
+            } else {
+                // Show desktop toast
+                showToast(`⏰ Hatırlatma Zamanı!`, `${notification.name}`);
+            }
         }
 
         function renderNotifications() {
@@ -272,7 +377,7 @@
             
             if (notifications.length === 0) {
                 listEl.innerHTML = `
-                    <div class="text-gray-500 text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                    <div class="text-gray-500 text-center py-8 border border-dashed border-gray-300 rounded-lg">
                         Henüz bildirim eklenmedi
                     </div>
                 `;
@@ -280,27 +385,32 @@
             }
 
             listEl.innerHTML = notifications.map(notification => `
-                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border">
-                    <div class="flex items-center space-x-4">
-                        <div class="text-2xl">${notification.active ? '🔔' : '🔕'}</div>
-                        <div>
-                            <div class="font-semibold text-gray-800">${notification.name}</div>
-                            <div class="text-gray-600">${notification.time}</div>
+                <div class="bg-gray-50 rounded-lg border p-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
+                        <div class="flex items-center space-x-3">
+                            <div class="text-2xl">${notification.active ? '🔔' : '🔕'}</div>
+                            <div>
+                                <div class="font-semibold text-gray-800">${notification.name}</div>
+                                <div class="text-lg text-blue-600 font-mono">${notification.time}</div>
+                                <div class="text-sm ${notification.dailyRepeat ? 'text-blue-600' : 'text-orange-600'}">
+                                    ${notification.dailyRepeat ? '📅 Her gün' : '📍 Tek seferlik'}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <button onclick="toggleNotification(${notification.id})" 
-                                class="px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                                    notification.active 
-                                        ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
-                                        : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                }">
-                            ${notification.active ? 'Duraklat' : 'Aktifleştir'}
-                        </button>
-                        <button onclick="removeNotification(${notification.id})" 
-                                class="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors">
-                            Sil
-                        </button>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="toggleNotification(${notification.id})" 
+                                    class="px-3 py-2 rounded-lg text-sm font-medium ${
+                                        notification.active 
+                                            ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
+                                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                    }">
+                                ${notification.active ? 'Duraklat' : 'Aktifleştir'}
+                            </button>
+                            <button onclick="removeNotification(${notification.id})" 
+                                    class="px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200">
+                                Sil
+                            </button>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -330,6 +440,27 @@
             }, 300);
         }
 
+        function showMobileNotification(title, message) {
+            const mobileNotification = document.getElementById('mobileNotification');
+            const titleEl = document.getElementById('mobileTitle');
+            const messageEl = document.getElementById('mobileMessage');
+            
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            
+            mobileNotification.classList.add('show');
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                closeMobileNotification();
+            }, 5000);
+        }
+
+        function closeMobileNotification() {
+            const mobileNotification = document.getElementById('mobileNotification');
+            mobileNotification.classList.remove('show');
+        }
+
         function saveNotifications() {
             localStorage.setItem('personalNotifications', JSON.stringify(notifications));
         }
@@ -349,5 +480,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9882827984624eff',t:'MTc1OTM5MDM4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98828e17e2b24eff',t:'MTc1OTM5MDg2Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
