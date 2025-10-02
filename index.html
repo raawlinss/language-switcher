@@ -117,6 +117,19 @@
 
             <!-- Status -->
             <div id="status" class="text-center text-sm text-gray-600"></div>
+
+            <!-- Log System -->
+            <div class="mt-8 border-t pt-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700">📊 Sistem Logları</h3>
+                    <button onclick="clearLogs()" class="text-sm text-red-600 hover:text-red-800">
+                        🗑️ Temizle
+                    </button>
+                </div>
+                <div id="logList" class="bg-gray-50 rounded-lg p-4 max-h-48 overflow-y-auto">
+                    <div class="text-gray-500 text-sm">Loglar yükleniyor...</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -149,11 +162,62 @@
     <script>
         let notifications = [];
         let activeIntervals = [];
+        let logs = [];
+
+        // Register Service Worker for background notifications
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:application/javascript;base64,' + btoa(`
+                self.addEventListener('message', function(event) {
+                    if (event.data && event.data.type === 'SCHEDULE_NOTIFICATION') {
+                        const { title, body, time, id } = event.data;
+                        
+                        // Calculate delay until notification time
+                        const now = new Date();
+                        const [hours, minutes] = time.split(':');
+                        const notificationTime = new Date();
+                        notificationTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                        
+                        // If time has passed today, schedule for tomorrow
+                        if (notificationTime <= now) {
+                            notificationTime.setDate(notificationTime.getDate() + 1);
+                        }
+                        
+                        const delay = notificationTime.getTime() - now.getTime();
+                        
+                        setTimeout(() => {
+                            self.registration.showNotification(title, {
+                                body: body,
+                                icon: '/favicon.ico',
+                                badge: '/favicon.ico',
+                                tag: 'notification-' + id,
+                                requireInteraction: true,
+                                actions: [
+                                    { action: 'close', title: 'Kapat' }
+                                ]
+                            });
+                        }, delay);
+                    }
+                });
+                
+                self.addEventListener('notificationclick', function(event) {
+                    event.notification.close();
+                    event.waitUntil(
+                        clients.openWindow('/')
+                    );
+                });
+            `)).then(function(registration) {
+                addLog('Service Worker başarıyla kaydedildi', 'success');
+            }).catch(function(error) {
+                addLog('Service Worker kaydedilemedi: ' + error.message, 'error');
+            });
+        }
 
         // Check notification permission on load
         window.addEventListener('load', function() {
             updatePermissionStatus();
             loadNotifications();
+            loadLogs();
+            addLog('Sistem başlatıldı', 'info');
         });
 
         function requestPermission() {
@@ -169,6 +233,7 @@
                     permissionBtn.disabled = false;
                     
                     if (permission === 'granted') {
+                        addLog('Bildirim izni verildi', 'success');
                         showToast('Bildirim İzni Verildi!', 'Artık size bildirim gönderebiliriz 🎉');
                         // Send a test notification
                         setTimeout(() => {
@@ -177,20 +242,25 @@
                                 icon: '🔔',
                                 tag: 'test-notification'
                             });
+                            addLog('Test bildirimi gönderildi', 'info');
                         }, 1000);
                     } else if (permission === 'denied') {
+                        addLog('Bildirim izni reddedildi', 'error');
                         showToast('İzin Reddedildi', 'Tarayıcı ayarlarından bildirimleri açabilirsiniz');
                         permissionBtn.textContent = originalText;
                     } else {
+                        addLog('Bildirim izni beklemede', 'warning');
                         permissionBtn.textContent = originalText;
                     }
                 }).catch(function(error) {
                     console.error('Permission request failed:', error);
+                    addLog('Bildirim izni hatası: ' + error.message, 'error');
                     permissionBtn.textContent = originalText;
                     permissionBtn.disabled = false;
                     showToast('Hata', 'Bildirim izni alınamadı');
                 });
             } else {
+                addLog('Tarayıcı bildirimleri desteklemiyor', 'error');
                 showToast('Uyarı', 'Tarayıcınız bildirimleri desteklemiyor');
             }
         }
@@ -221,17 +291,20 @@
             
             if (!userName) {
                 showToast('Hata', 'Lütfen bildirim notunuzu yazın');
+                addLog('Bildirim ekleme hatası: Not boş', 'error');
                 return;
             }
             
             if (!time) {
                 showToast('Hata', 'Lütfen bir saat seçin');
+                addLog('Bildirim ekleme hatası: Saat boş', 'error');
                 return;
             }
 
             // Check if time already exists with same repeat setting
             if (notifications.some(n => n.time === time && n.dailyRepeat === dailyRepeat)) {
                 showToast('Hata', 'Bu saat için zaten aynı tipte bildirim var');
+                addLog(`Bildirim ekleme hatası: ${time} zaten mevcut`, 'error');
                 return;
             }
 
@@ -248,12 +321,14 @@
             saveNotifications();
             renderNotifications();
             scheduleNotification(notification);
+            scheduleServiceWorkerNotification(notification);
             
             // Clear inputs
             document.getElementById('notificationTime').value = '';
             document.getElementById('dailyRepeat').checked = false;
             
             const repeatText = dailyRepeat ? ' (Her gün)' : ' (Tek seferlik)';
+            addLog(`Bildirim eklendi: ${userName} - ${time}${repeatText}`, 'success');
             showToast('Başarılı!', `${time} için bildirim eklendi${repeatText}`);
         }
 
@@ -348,6 +423,19 @@
             });
         }
 
+        function scheduleServiceWorkerNotification(notification) {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'SCHEDULE_NOTIFICATION',
+                    title: '⏰ Hatırlatma Zamanı!',
+                    body: notification.name,
+                    time: notification.time,
+                    id: notification.id
+                });
+                addLog(`Service Worker bildirimi planlandı: ${notification.time}`, 'info');
+            }
+        }
+
         function sendNotification(notification) {
             const message = `${notification.name} - Saat ${notification.time} 🕐`;
             
@@ -358,6 +446,7 @@
                     icon: '🔔',
                     tag: 'personal-notification'
                 });
+                addLog(`Bildirim gönderildi: ${notification.name}`, 'success');
             }
             
             // Check if mobile device
@@ -465,20 +554,94 @@
             localStorage.setItem('personalNotifications', JSON.stringify(notifications));
         }
 
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleString('tr-TR');
+            const log = {
+                id: Date.now(),
+                message: message,
+                type: type,
+                timestamp: timestamp
+            };
+            
+            logs.unshift(log); // Add to beginning
+            
+            // Keep only last 50 logs
+            if (logs.length > 50) {
+                logs = logs.slice(0, 50);
+            }
+            
+            saveLogs();
+            renderLogs();
+        }
+
+        function renderLogs() {
+            const logList = document.getElementById('logList');
+            
+            if (logs.length === 0) {
+                logList.innerHTML = '<div class="text-gray-500 text-sm">Henüz log kaydı yok</div>';
+                return;
+            }
+            
+            const logColors = {
+                success: 'text-green-600',
+                error: 'text-red-600',
+                warning: 'text-yellow-600',
+                info: 'text-blue-600'
+            };
+            
+            const logIcons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            logList.innerHTML = logs.map(log => `
+                <div class="flex items-start space-x-2 py-1 border-b border-gray-200 last:border-b-0">
+                    <span class="text-sm">${logIcons[log.type] || 'ℹ️'}</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm ${logColors[log.type] || 'text-gray-600'}">${log.message}</div>
+                        <div class="text-xs text-gray-400">${log.timestamp}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function clearLogs() {
+            logs = [];
+            saveLogs();
+            renderLogs();
+            addLog('Loglar temizlendi', 'info');
+        }
+
+        function saveLogs() {
+            localStorage.setItem('systemLogs', JSON.stringify(logs));
+        }
+
+        function loadLogs() {
+            const saved = localStorage.getItem('systemLogs');
+            if (saved) {
+                logs = JSON.parse(saved);
+                renderLogs();
+            }
+        }
+
         function loadNotifications() {
             const saved = localStorage.getItem('personalNotifications');
             if (saved) {
                 notifications = JSON.parse(saved);
                 renderNotifications();
+                addLog(`${notifications.length} bildirim yüklendi`, 'info');
                 
                 // Reschedule all active notifications
                 notifications.forEach(notification => {
                     if (notification.active) {
                         scheduleNotification(notification);
+                        scheduleServiceWorkerNotification(notification);
                     }
                 });
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98828e17e2b24eff',t:'MTc1OTM5MDg2Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98838c44e1473438',t:'MTc1OTQwMTI3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
