@@ -67,6 +67,14 @@
         <div class="text-center mb-8">
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">🔔 Bildirim Sistemi</h1>
             <p class="text-gray-600">Notlarınızı zamanında hatırlayın</p>
+            <div class="mt-2">
+                <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                    v3.2.1 - Arka Plan Pro
+                </span>
+                <span class="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full ml-2">
+                    Service Worker Aktif
+                </span>
+            </div>
         </div>
 
         <!-- Main Card -->
@@ -184,10 +192,35 @@
             return outputArray;
         }
 
-        // Register Service Worker for push notifications
+        // Register Service Worker for background push notifications
         if ('serviceWorker' in navigator && 'PushManager' in window) {
             navigator.serviceWorker.register('data:application/javascript;base64,' + btoa(`
-                // Service Worker for Push Notifications
+                // Advanced Service Worker for Background Notifications
+                
+                let backgroundTimers = new Map();
+                let notificationStorage = {};
+                
+                // Load notifications from storage
+                self.addEventListener('activate', function(event) {
+                    console.log('Service Worker activated - Background system ready');
+                    
+                    // Load stored notifications and reschedule them
+                    event.waitUntil(
+                        caches.open('notification-cache').then(function(cache) {
+                            return cache.match('notifications').then(function(response) {
+                                if (response) {
+                                    return response.json().then(function(notifications) {
+                                        notifications.forEach(function(notification) {
+                                            if (notification.active) {
+                                                scheduleBackgroundNotification(notification);
+                                            }
+                                        });
+                                    });
+                                }
+                            });
+                        })
+                    );
+                });
                 
                 self.addEventListener('push', function(event) {
                     console.log('Push event received:', event);
@@ -195,10 +228,12 @@
                     let notificationData = {
                         title: '⏰ Hatırlatma Zamanı!',
                         body: 'Bildiriminiz var',
-                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS43VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                        badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS43VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS7VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                        badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS-VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
                         tag: 'personal-reminder',
                         requireInteraction: true,
+                        vibrate: [200, 100, 200],
+                        silent: false,
                         actions: [
                             { action: 'view', title: '👀 Görüntüle' },
                             { action: 'close', title: '❌ Kapat' }
@@ -245,49 +280,125 @@
                     );
                 });
                 
-                self.addEventListener('message', function(event) {
-                    if (event.data && event.data.type === 'SCHEDULE_NOTIFICATION') {
-                        const { title, body, time, id, dailyRepeat } = event.data;
+                function scheduleBackgroundNotification(notification) {
+                    // Clear existing timer for this notification
+                    if (backgroundTimers.has(notification.id)) {
+                        clearTimeout(backgroundTimers.get(notification.id));
+                        backgroundTimers.delete(notification.id);
+                    }
+                    
+                    function createTimer() {
+                        const now = new Date();
+                        const [hours, minutes] = notification.time.split(':');
+                        const notificationTime = new Date();
+                        notificationTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
                         
-                        function scheduleNotification() {
-                            const now = new Date();
-                            const [hours, minutes] = time.split(':');
-                            const notificationTime = new Date();
-                            notificationTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-                            
-                            // If time has passed today, schedule for tomorrow
-                            if (notificationTime <= now) {
-                                notificationTime.setDate(notificationTime.getDate() + 1);
-                            }
-                            
-                            const delay = notificationTime.getTime() - now.getTime();
-                            
-                            setTimeout(() => {
-                                self.registration.showNotification(title, {
-                                    body: body,
-                                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS43VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                                    badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS3VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                                    tag: 'notification-' + id,
-                                    requireInteraction: true,
-                                    actions: [
-                                        { action: 'view', title: '👀 Görüntüle' },
-                                        { action: 'close', title: '❌ Kapat' }
-                                    ]
-                                });
-                                
-                                // If daily repeat, schedule next day
-                                if (dailyRepeat) {
-                                    scheduleNotification();
-                                }
-                            }, delay);
+                        // If time has passed today, schedule for tomorrow
+                        if (notificationTime <= now) {
+                            notificationTime.setDate(notificationTime.getDate() + 1);
                         }
                         
-                        scheduleNotification();
+                        const delay = notificationTime.getTime() - now.getTime();
+                        console.log('Background notification scheduled for:', notificationTime, 'Delay:', delay);
+                        
+                        const timerId = setTimeout(() => {
+                            // Show notification
+                            self.registration.showNotification('⏰ Hatırlatma Zamanı!', {
+                                body: notification.name,
+                                icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS7VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                                badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS-VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                                tag: 'background-notification-' + notification.id,
+                                requireInteraction: true,
+                                vibrate: [200, 100, 200],
+                                silent: false,
+                                actions: [
+                                    { action: 'view', title: '👀 Görüntüle' },
+                                    { action: 'close', title: '❌ Kapat' }
+                                ]
+                            });
+                            
+                            console.log('Background notification sent:', notification.name);
+                            
+                            // Remove timer from map
+                            backgroundTimers.delete(notification.id);
+                            
+                            // If daily repeat, schedule next occurrence
+                            if (notification.dailyRepeat) {
+                                createTimer();
+                            }
+                        }, delay);
+                        
+                        // Store timer ID
+                        backgroundTimers.set(notification.id, timerId);
+                    }
+                    
+                    createTimer();
+                }
+                
+                self.addEventListener('message', function(event) {
+                    if (event.data && event.data.type === 'SCHEDULE_NOTIFICATION') {
+                        const notification = event.data;
+                        console.log('Scheduling background notification:', notification);
+                        scheduleBackgroundNotification(notification);
+                        
+                        // Store notification data
+                        notificationStorage[notification.id] = notification;
+                        
+                        // Save to cache for persistence
+                        caches.open('notification-cache').then(function(cache) {
+                            const notifications = Object.values(notificationStorage);
+                            cache.put('notifications', new Response(JSON.stringify(notifications)));
+                        });
+                    }
+                    
+                    if (event.data && event.data.type === 'CANCEL_NOTIFICATION') {
+                        const notificationId = event.data.id;
+                        console.log('Canceling background notification:', notificationId);
+                        
+                        // Clear timer
+                        if (backgroundTimers.has(notificationId)) {
+                            clearTimeout(backgroundTimers.get(notificationId));
+                            backgroundTimers.delete(notificationId);
+                        }
+                        
+                        // Remove from storage
+                        delete notificationStorage[notificationId];
+                        
+                        // Update cache
+                        caches.open('notification-cache').then(function(cache) {
+                            const notifications = Object.values(notificationStorage);
+                            cache.put('notifications', new Response(JSON.stringify(notifications)));
+                        });
+                    }
+                    
+                    if (event.data && event.data.type === 'UPDATE_NOTIFICATIONS') {
+                        const notifications = event.data.notifications;
+                        console.log('Updating background notifications:', notifications);
+                        
+                        // Clear all existing timers
+                        backgroundTimers.forEach(function(timerId) {
+                            clearTimeout(timerId);
+                        });
+                        backgroundTimers.clear();
+                        notificationStorage = {};
+                        
+                        // Schedule active notifications
+                        notifications.forEach(function(notification) {
+                            if (notification.active) {
+                                scheduleBackgroundNotification(notification);
+                                notificationStorage[notification.id] = notification;
+                            }
+                        });
+                        
+                        // Save to cache
+                        caches.open('notification-cache').then(function(cache) {
+                            cache.put('notifications', new Response(JSON.stringify(notifications)));
+                        });
                     }
                 });
             `)).then(function(registration) {
                 swRegistration = registration;
-                addLog('Service Worker başarıyla kaydedildi', 'success');
+                addLog('Service Worker başarıyla kaydedildi - Arka plan sistemi aktif', 'success');
                 
                 // Check if already subscribed
                 return registration.pushManager.getSubscription();
@@ -296,7 +407,7 @@
                 updateSubscriptionStatus();
                 
                 if (isSubscribed) {
-                    addLog('Push aboneliği zaten aktif', 'success');
+                    addLog('Push aboneliği zaten aktif - Arka plan bildirimleri çalışıyor', 'success');
                 } else {
                     addLog('Push aboneliği bekleniyor', 'info');
                 }
@@ -312,7 +423,7 @@
             updatePermissionStatus();
             loadNotifications();
             loadLogs();
-            addLog('Sistem başlatıldı - Push notification sistemi aktif', 'info');
+            addLog('Sistem başlatıldı - Arka plan bildirim sistemi hazır', 'info');
             
             // Auto-subscribe if permission already granted
             if (Notification.permission === 'granted' && !isSubscribed) {
@@ -335,12 +446,12 @@
                     permissionBtn.disabled = false;
                     
                     if (permission === 'granted') {
-                        addLog('Bildirim izni verildi', 'success');
+                        addLog('Bildirim izni verildi - Arka plan sistemi aktif', 'success');
                         
                         // Subscribe to push notifications
                         subscribeUser();
                         
-                        showToast('Bildirim İzni Verildi!', 'Artık size bildirim gönderebiliriz 🎉');
+                        showToast('Bildirim İzni Verildi!', 'Artık arka planda bildirim gönderebiliriz 🎉');
                         // Send a test notification
                         setTimeout(() => {
                             sendTestNotification();
@@ -378,7 +489,7 @@
                 userVisibleOnly: true,
                 applicationServerKey: applicationServerKey
             }).then(function(subscription) {
-                addLog('Push aboneliği başarılı', 'success');
+                addLog('Push aboneliği başarılı - Arka plan bildirimleri aktif', 'success');
                 isSubscribed = true;
                 updateSubscriptionStatus();
                 
@@ -395,7 +506,7 @@
         function updateSubscriptionStatus() {
             // This function can be used to update UI based on subscription status
             if (isSubscribed) {
-                addLog('Push bildirimleri aktif - Haber sitesi gibi çalışıyor', 'success');
+                addLog('Push bildirimleri aktif - Arka planda çalışıyor', 'success');
             }
         }
 
@@ -403,17 +514,18 @@
             // Send via Service Worker
             if (swRegistration && swRegistration.active) {
                 swRegistration.showNotification('🎉 Test Bildirimi', {
-                    body: 'Push bildirimleri başarıyla aktif edildi! Artık haber sitesi gibi çalışıyor.',
-                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS43VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                    badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS3VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                    body: 'Arka plan bildirimleri başarıyla aktif edildi! Siteden çıkılsa bile çalışacak.',
+                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS7VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                    badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS-VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
                     tag: 'test-notification',
                     requireInteraction: true,
+                    vibrate: [200, 100, 200],
                     actions: [
                         { action: 'view', title: '👀 Görüntüle' },
                         { action: 'close', title: '❌ Kapat' }
                     ]
                 });
-                addLog('Test push bildirimi gönderildi', 'info');
+                addLog('Test arka plan bildirimi gönderildi', 'info');
             }
         }
 
@@ -423,7 +535,7 @@
             
             if ('Notification' in window) {
                 if (Notification.permission === 'granted') {
-                    statusEl.textContent = '✅ Bildirim izni verildi - Sistem aktif';
+                    statusEl.textContent = '✅ Bildirim izni verildi - Arka plan sistemi aktif';
                     statusEl.className = 'text-center text-sm text-green-600';
                     permissionBtn.style.display = 'none';
                 } else if (Notification.permission === 'denied') {
@@ -481,7 +593,7 @@
             
             const repeatText = dailyRepeat ? ' (Her gün)' : ' (Tek seferlik)';
             addLog(`Bildirim eklendi: ${userName} - ${time}${repeatText}`, 'success');
-            showToast('Başarılı!', `${time} için bildirim eklendi${repeatText}`);
+            showToast('Başarılı!', `${time} için arka plan bildirimi eklendi${repeatText}`);
         }
 
         function removeNotification(id) {
@@ -496,8 +608,12 @@
                 return true;
             });
             
+            // Cancel background notification
+            cancelServiceWorkerNotification(id);
+            
             saveNotifications();
             renderNotifications();
+            updateAllServiceWorkerNotifications();
             showToast('Silindi', 'Bildirim kaldırıldı');
         }
 
@@ -510,7 +626,8 @@
                 
                 if (notification.active) {
                     scheduleNotification(notification);
-                    showToast('Aktif', 'Bildirim açıldı');
+                    scheduleServiceWorkerNotification(notification);
+                    showToast('Aktif', 'Arka plan bildirimi açıldı');
                 } else {
                     // Remove from active intervals
                     activeIntervals = activeIntervals.filter(interval => {
@@ -520,8 +637,11 @@
                         }
                         return true;
                     });
-                    showToast('Pasif', 'Bildirim kapatıldı');
+                    cancelServiceWorkerNotification(id);
+                    showToast('Pasif', 'Arka plan bildirimi kapatıldı');
                 }
+                
+                updateAllServiceWorkerNotifications();
             }
         }
 
@@ -579,15 +699,35 @@
             if ('serviceWorker' in navigator && swRegistration && swRegistration.active) {
                 swRegistration.active.postMessage({
                     type: 'SCHEDULE_NOTIFICATION',
-                    title: '⏰ Hatırlatma Zamanı!',
-                    body: notification.name,
-                    time: notification.time,
                     id: notification.id,
-                    dailyRepeat: notification.dailyRepeat
+                    name: notification.name,
+                    time: notification.time,
+                    dailyRepeat: notification.dailyRepeat,
+                    active: notification.active
                 });
-                addLog(`Service Worker bildirimi planlandı: ${notification.time} - ${notification.name}`, 'info');
+                addLog(`Arka plan bildirimi planlandı: ${notification.time} - ${notification.name}`, 'success');
             } else {
-                addLog('Service Worker henüz hazır değil, bildirim planlanamadı', 'warning');
+                addLog('Service Worker henüz hazır değil, arka plan bildirimi planlanamadı', 'warning');
+            }
+        }
+
+        function cancelServiceWorkerNotification(notificationId) {
+            if ('serviceWorker' in navigator && swRegistration && swRegistration.active) {
+                swRegistration.active.postMessage({
+                    type: 'CANCEL_NOTIFICATION',
+                    id: notificationId
+                });
+                addLog(`Arka plan bildirimi iptal edildi: ${notificationId}`, 'info');
+            }
+        }
+
+        function updateAllServiceWorkerNotifications() {
+            if ('serviceWorker' in navigator && swRegistration && swRegistration.active) {
+                swRegistration.active.postMessage({
+                    type: 'UPDATE_NOTIFICATIONS',
+                    notifications: notifications
+                });
+                addLog(`Tüm arka plan bildirimleri güncellendi (${notifications.filter(n => n.active).length} aktif)`, 'info');
             }
         }
 
@@ -598,8 +738,8 @@
             if (swRegistration && swRegistration.active && Notification.permission === 'granted') {
                 swRegistration.showNotification('⏰ Hatırlatma Zamanı!', {
                     body: message,
-                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS3VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                    badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS-VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS43QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS7VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
+                    badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS-VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
                     tag: 'personal-notification-' + notification.id,
                     requireInteraction: true,
                     actions: [
@@ -609,7 +749,7 @@
                     vibrate: [200, 100, 200], // Mobile vibration
                     silent: false
                 });
-                addLog(`Push bildirimi gönderildi: ${notification.name}`, 'success');
+                addLog(`Arka plan push bildirimi gönderildi: ${notification.name}`, 'success');
             } else if (Notification.permission === 'granted') {
                 // Fallback to regular notification
                 new Notification('⏰ Hatırlatma Zamanı!', {
@@ -654,7 +794,7 @@
                                 <div class="font-semibold text-gray-800">${notification.name}</div>
                                 <div class="text-lg text-blue-600 font-mono">${notification.time}</div>
                                 <div class="text-sm ${notification.dailyRepeat ? 'text-blue-600' : 'text-orange-600'}">
-                                    ${notification.dailyRepeat ? '📅 Her gün' : '📍 Tek seferlik'}
+                                    ${notification.dailyRepeat ? '📅 Her gün (Arka planda)' : '📍 Tek seferlik (Arka planda)'}
                                 </div>
                             </div>
                         </div>
@@ -803,7 +943,7 @@
             if (saved) {
                 notifications = JSON.parse(saved);
                 renderNotifications();
-                addLog(`${notifications.length} bildirim yüklendi`, 'info');
+                addLog(`${notifications.length} bildirim yüklendi - Arka plan sistemi hazırlanıyor`, 'info');
                 
                 // Reschedule all active notifications
                 notifications.forEach(notification => {
@@ -812,8 +952,13 @@
                         scheduleServiceWorkerNotification(notification);
                     }
                 });
+                
+                // Update service worker with all notifications
+                setTimeout(() => {
+                    updateAllServiceWorkerNotifications();
+                }, 3000);
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98846395b531805b',t:'MTc1OTQxMDA5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9884763e74119938',t:'MTc1OTQxMDg1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
