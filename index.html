@@ -1,964 +1,305 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="az">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>Kişisel Bildirim Sistemi</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Kiril-Latın Çevirici</title>
     <style>
         body {
             box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1e293b;
         }
         
-        .notification {
-            animation: slideIn 0.5s ease-out;
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.2);
+            padding: 48px;
+            width: 100%;
+            max-width: 900px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
         
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+        .title {
+            text-align: center;
+            margin-bottom: 40px;
         }
         
-        .fade-out {
-            animation: fadeOut 0.3s ease-in forwards;
+        .title h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
         }
         
-        @keyframes fadeOut {
-            to {
-                opacity: 0;
-                transform: translateX(100%);
-            }
+        .title p {
+            color: #64748b;
+            font-size: 1.2rem;
+            font-weight: 500;
         }
         
-        /* Mobile notification styles */
+        .converter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin-bottom: 40px;
+        }
+        
         @media (max-width: 768px) {
-            .mobile-notification {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 16px;
-                z-index: 9999;
-                transform: translateY(-100%);
-                transition: transform 0.3s ease-out;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            }
-            
-            .mobile-notification.show {
-                transform: translateY(0);
+            .converter-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
             }
         }
+        
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .textarea {
+            width: 100%;
+            height: 320px;
+            padding: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            resize: none;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            line-height: 1.6;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px);
+        }
+        
+        .textarea.readonly {
+            background: rgba(248, 250, 252, 0.9);
+            color: #374151;
+            cursor: default;
+        }
+        
+        .button {
+            width: 100%;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .button-clear {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .button-clear:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+        }
+        
+        .button-copy {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .button-copy:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-4 sm:py-8">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">🔔 Bildirim Sistemi</h1>
-            <p class="text-gray-600">Notlarınızı zamanında hatırlayın</p>
-            <div class="mt-2">
-                <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                    v3.2.1 - Arka Plan Pro
-                </span>
-                <span class="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full ml-2">
-                    Service Worker Aktif
-                </span>
-            </div>
+<body>
+    <div class="container">
+        <div class="title">
+            <h1>🔤 Kiril → Latın Çevirici</h1>
+            <p>Kiril hərflərini latın hərflərinə çevirin</p>
         </div>
 
-        <!-- Main Card -->
-        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
-            <!-- Note Input Section -->
-            <div class="mb-6">
-                <label class="block text-gray-700 font-semibold mb-2">📝 Bildirim Notu</label>
-                <input type="text" id="userName" placeholder="Örn: İlaç içmeyi unutma, Su iç, Egzersiz zamanı..." 
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-            </div>
-
-            <!-- Time Input Section -->
-            <div class="mb-6">
-                <label class="block text-gray-700 font-semibold mb-2">⏰ Bildirim Saati</label>
-                <div class="space-y-3">
-                    <input type="time" id="notificationTime" 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                    
-                    <div class="flex items-center space-x-2">
-                        <input type="checkbox" id="dailyRepeat" class="w-4 h-4 text-blue-600">
-                        <label for="dailyRepeat" class="text-gray-700">📅 Her gün tekrarla</label>
-                    </div>
-                    
-                    <button onclick="addNotification()" 
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-semibold">
-                        Bildirim Ekle
-                    </button>
-                </div>
-            </div>
-
-            <!-- Notification List -->
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-700 mb-4">📋 Aktif Bildirimler</h3>
-                <div id="notificationList" class="space-y-3">
-                    <div class="text-gray-500 text-center py-8 border border-dashed border-gray-300 rounded-lg">
-                        Henüz bildirim eklenmedi
-                    </div>
-                </div>
-            </div>
-
-            <!-- Permission Button -->
-            <div class="text-center mb-6">
-                <button onclick="requestPermission()" id="permissionBtn"
-                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold">
-                    🔔 Bildirim İzni Ver
+        <div class="converter-grid">
+            <!-- Kiril mətn sahəsi -->
+            <div class="input-section">
+                <label class="label">
+                    📝 Kiril mətni daxil edin
+                </label>
+                <textarea 
+                    id="kirilText" 
+                    placeholder="Kiril hərfləri ilə mətn yazın..."
+                    class="textarea"
+                    oninput="convertText()"
+                ></textarea>
+                <button 
+                    onclick="clearText()" 
+                    class="button button-clear"
+                >
+                    🗑️ Təmizlə
                 </button>
             </div>
 
-            <!-- Status -->
-            <div id="status" class="text-center text-sm text-gray-600"></div>
-
-            <!-- Log System -->
-            <div class="mt-8 border-t pt-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-700">📊 Sistem Logları</h3>
-                    <button onclick="clearLogs()" class="text-sm text-red-600 hover:text-red-800">
-                        🗑️ Temizle
-                    </button>
-                </div>
-                <div id="logList" class="bg-gray-50 rounded-lg p-4 max-h-48 overflow-y-auto">
-                    <div class="text-gray-500 text-sm">Loglar yükleniyor...</div>
-                </div>
+            <!-- Latın mətn sahəsi -->
+            <div class="input-section">
+                <label class="label">
+                    ✨ Latın nəticəsi
+                </label>
+                <textarea 
+                    id="latinText" 
+                    placeholder="Çevrilmiş mətn burada görünəcək..."
+                    class="textarea readonly"
+                    readonly
+                ></textarea>
+                <button 
+                    onclick="copyText()" 
+                    class="button button-copy"
+                    id="copyButton"
+                >
+                    📋 Kopyala
+                </button>
             </div>
         </div>
-    </div>
 
-    <!-- Notification Toast -->
-    <div id="notificationToast" class="fixed top-4 right-4 bg-white border-l-4 border-blue-500 rounded-lg shadow-lg p-4 max-w-sm hidden notification">
-        <div class="flex items-center">
-            <div class="text-2xl mr-3">🔔</div>
-            <div>
-                <div class="font-semibold text-gray-800" id="toastTitle">Bildirim</div>
-                <div class="text-gray-600" id="toastMessage">Mesaj</div>
-            </div>
-            <button onclick="closeToast()" class="ml-auto text-gray-400 hover:text-gray-600">✕</button>
-        </div>
-    </div>
 
-    <!-- Mobile Notification -->
-    <div id="mobileNotification" class="mobile-notification">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center">
-                <div class="text-2xl mr-3">🔔</div>
-                <div>
-                    <div class="font-semibold" id="mobileTitle">Hatırlatma</div>
-                    <div class="text-sm opacity-90" id="mobileMessage">Mesaj</div>
-                </div>
-            </div>
-            <button onclick="closeMobileNotification()" class="text-white opacity-75 hover:opacity-100 ml-4">✕</button>
-        </div>
     </div>
 
     <script>
-        let notifications = [];
-        let activeIntervals = [];
-        let logs = [];
-        let swRegistration = null;
-        let isSubscribed = false;
+        // Çevirmə cədvəli
+        const conversionMap = {
+            'А': 'A', 'а': 'a',
+            'Б': 'B', 'б': 'b',
+            'В': 'V', 'в': 'v',
+            'Г': 'Q', 'г': 'q',
+            'Д': 'D', 'д': 'd',
+            'Е': 'E', 'е': 'e',
+            'Ё': 'Yo', 'ё': 'yo',
+            'Ж': 'J', 'ж': 'j',
+            'З': 'Z', 'з': 'z',
+            'И': 'I', 'и': 'i',
+            'Й': 'Y', 'й': 'y',
+            'К': 'K', 'к': 'k',
+            'Л': 'L', 'л': 'l',
+            'М': 'M', 'м': 'm',
+            'Н': 'N', 'н': 'n',
+            'О': 'O', 'о': 'o',
+            'П': 'P', 'п': 'p',
+            'Р': 'R', 'р': 'r',
+            'С': 'S', 'с': 's',
+            'Т': 'T', 'т': 't',
+            'У': 'U', 'у': 'u',
+            'Ф': 'F', 'ф': 'f',
+            'Х': 'X', 'х': 'x',
+            'Ц': 'Ü', 'ц': 'ü',
+            'Ч': 'Ç', 'ч': 'ç',
+            'Ш': 'Ş', 'ш': 'ş',
+            'Щ': 'H', 'щ': 'h',
+            'Ъ': 'C', 'ъ': 'c',
+            'Ы': 'I', 'ы': 'ı',
+            'Ь': 'Ğ', 'ь': 'ğ',
+            'Э': 'G', 'э': 'g',
+            'Ю': 'Ö', 'ю': 'ö',
+            'Я': 'Ə', 'я': 'ə'
+        };
 
-        // VAPID keys for push notifications (in real app, keep private key secret)
-        const applicationServerPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa40HcCWLEw6_MzA70HtIeJqbFJDstk5_NjvQoaq30cINhw_7b5vxrHZNjPlQ4';
-
-        function urlB64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding)
-                .replace(/-/g, '+')
-                .replace(/_/g, '/');
-
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-
-            for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
-        }
-
-        // Register Service Worker for background push notifications
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-            navigator.serviceWorker.register('data:application/javascript;base64,' + btoa(`
-                // Advanced Service Worker for Background Notifications
-                
-                let backgroundTimers = new Map();
-                let notificationStorage = {};
-                
-                // Load notifications from storage
-                self.addEventListener('activate', function(event) {
-                    console.log('Service Worker activated - Background system ready');
-                    
-                    // Load stored notifications and reschedule them
-                    event.waitUntil(
-                        caches.open('notification-cache').then(function(cache) {
-                            return cache.match('notifications').then(function(response) {
-                                if (response) {
-                                    return response.json().then(function(notifications) {
-                                        notifications.forEach(function(notification) {
-                                            if (notification.active) {
-                                                scheduleBackgroundNotification(notification);
-                                            }
-                                        });
-                                    });
-                                }
-                            });
-                        })
-                    );
-                });
-                
-                self.addEventListener('push', function(event) {
-                    console.log('Push event received:', event);
-                    
-                    let notificationData = {
-                        title: '⏰ Hatırlatma Zamanı!',
-                        body: 'Bildiriminiz var',
-                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS7VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                        badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS-VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                        tag: 'personal-reminder',
-                        requireInteraction: true,
-                        vibrate: [200, 100, 200],
-                        silent: false,
-                        actions: [
-                            { action: 'view', title: '👀 Görüntüle' },
-                            { action: 'close', title: '❌ Kapat' }
-                        ],
-                        data: {
-                            url: '/'
-                        }
-                    };
-                    
-                    if (event.data) {
-                        try {
-                            const data = event.data.json();
-                            notificationData = { ...notificationData, ...data };
-                        } catch (e) {
-                            console.log('Push data parse error:', e);
-                        }
-                    }
-                    
-                    event.waitUntil(
-                        self.registration.showNotification(notificationData.title, notificationData)
-                    );
-                });
-                
-                self.addEventListener('notificationclick', function(event) {
-                    console.log('Notification clicked:', event);
-                    event.notification.close();
-                    
-                    if (event.action === 'close') {
-                        return;
-                    }
-                    
-                    event.waitUntil(
-                        clients.matchAll({ type: 'window' }).then(function(clientList) {
-                            for (let i = 0; i < clientList.length; i++) {
-                                const client = clientList[i];
-                                if (client.url === '/' && 'focus' in client) {
-                                    return client.focus();
-                                }
-                            }
-                            if (clients.openWindow) {
-                                return clients.openWindow('/');
-                            }
-                        })
-                    );
-                });
-                
-                function scheduleBackgroundNotification(notification) {
-                    // Clear existing timer for this notification
-                    if (backgroundTimers.has(notification.id)) {
-                        clearTimeout(backgroundTimers.get(notification.id));
-                        backgroundTimers.delete(notification.id);
-                    }
-                    
-                    function createTimer() {
-                        const now = new Date();
-                        const [hours, minutes] = notification.time.split(':');
-                        const notificationTime = new Date();
-                        notificationTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-                        
-                        // If time has passed today, schedule for tomorrow
-                        if (notificationTime <= now) {
-                            notificationTime.setDate(notificationTime.getDate() + 1);
-                        }
-                        
-                        const delay = notificationTime.getTime() - now.getTime();
-                        console.log('Background notification scheduled for:', notificationTime, 'Delay:', delay);
-                        
-                        const timerId = setTimeout(() => {
-                            // Show notification
-                            self.registration.showNotification('⏰ Hatırlatma Zamanı!', {
-                                body: notification.name,
-                                icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS7VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                                badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS-VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                                tag: 'background-notification-' + notification.id,
-                                requireInteraction: true,
-                                vibrate: [200, 100, 200],
-                                silent: false,
-                                actions: [
-                                    { action: 'view', title: '👀 Görüntüle' },
-                                    { action: 'close', title: '❌ Kapat' }
-                                ]
-                            });
-                            
-                            console.log('Background notification sent:', notification.name);
-                            
-                            // Remove timer from map
-                            backgroundTimers.delete(notification.id);
-                            
-                            // If daily repeat, schedule next occurrence
-                            if (notification.dailyRepeat) {
-                                createTimer();
-                            }
-                        }, delay);
-                        
-                        // Store timer ID
-                        backgroundTimers.set(notification.id, timerId);
-                    }
-                    
-                    createTimer();
-                }
-                
-                self.addEventListener('message', function(event) {
-                    if (event.data && event.data.type === 'SCHEDULE_NOTIFICATION') {
-                        const notification = event.data;
-                        console.log('Scheduling background notification:', notification);
-                        scheduleBackgroundNotification(notification);
-                        
-                        // Store notification data
-                        notificationStorage[notification.id] = notification;
-                        
-                        // Save to cache for persistence
-                        caches.open('notification-cache').then(function(cache) {
-                            const notifications = Object.values(notificationStorage);
-                            cache.put('notifications', new Response(JSON.stringify(notifications)));
-                        });
-                    }
-                    
-                    if (event.data && event.data.type === 'CANCEL_NOTIFICATION') {
-                        const notificationId = event.data.id;
-                        console.log('Canceling background notification:', notificationId);
-                        
-                        // Clear timer
-                        if (backgroundTimers.has(notificationId)) {
-                            clearTimeout(backgroundTimers.get(notificationId));
-                            backgroundTimers.delete(notificationId);
-                        }
-                        
-                        // Remove from storage
-                        delete notificationStorage[notificationId];
-                        
-                        // Update cache
-                        caches.open('notification-cache').then(function(cache) {
-                            const notifications = Object.values(notificationStorage);
-                            cache.put('notifications', new Response(JSON.stringify(notifications)));
-                        });
-                    }
-                    
-                    if (event.data && event.data.type === 'UPDATE_NOTIFICATIONS') {
-                        const notifications = event.data.notifications;
-                        console.log('Updating background notifications:', notifications);
-                        
-                        // Clear all existing timers
-                        backgroundTimers.forEach(function(timerId) {
-                            clearTimeout(timerId);
-                        });
-                        backgroundTimers.clear();
-                        notificationStorage = {};
-                        
-                        // Schedule active notifications
-                        notifications.forEach(function(notification) {
-                            if (notification.active) {
-                                scheduleBackgroundNotification(notification);
-                                notificationStorage[notification.id] = notification;
-                            }
-                        });
-                        
-                        // Save to cache
-                        caches.open('notification-cache').then(function(cache) {
-                            cache.put('notifications', new Response(JSON.stringify(notifications)));
-                        });
-                    }
-                });
-            `)).then(function(registration) {
-                swRegistration = registration;
-                addLog('Service Worker başarıyla kaydedildi - Arka plan sistemi aktif', 'success');
-                
-                // Check if already subscribed
-                return registration.pushManager.getSubscription();
-            }).then(function(subscription) {
-                isSubscribed = !(subscription === null);
-                updateSubscriptionStatus();
-                
-                if (isSubscribed) {
-                    addLog('Push aboneliği zaten aktif - Arka plan bildirimleri çalışıyor', 'success');
-                } else {
-                    addLog('Push aboneliği bekleniyor', 'info');
-                }
-            }).catch(function(error) {
-                addLog('Service Worker kaydedilemedi: ' + error.message, 'error');
-            });
-        } else {
-            addLog('Push notifications desteklenmiyor', 'error');
-        }
-
-        // Check notification permission on load
-        window.addEventListener('load', function() {
-            updatePermissionStatus();
-            loadNotifications();
-            loadLogs();
-            addLog('Sistem başlatıldı - Arka plan bildirim sistemi hazır', 'info');
+        function convertText() {
+            const kirilText = document.getElementById('kirilText').value;
+            let latinText = '';
             
-            // Auto-subscribe if permission already granted
-            if (Notification.permission === 'granted' && !isSubscribed) {
+            for (let char of kirilText) {
+                if (conversionMap.hasOwnProperty(char)) {
+                    latinText += conversionMap[char];
+                } else {
+                    latinText += char; // Kiril olmayan hərfləri olduğu kimi saxla
+                }
+            }
+            
+            document.getElementById('latinText').value = latinText;
+        }
+
+        function clearText() {
+            document.getElementById('kirilText').value = '';
+            document.getElementById('latinText').value = '';
+            document.getElementById('kirilText').focus();
+        }
+
+        function copyText() {
+            const latinText = document.getElementById('latinText');
+            const button = document.getElementById('copyButton');
+            const textToCopy = latinText.value;
+            
+            if (!textToCopy.trim()) {
+                alert('Kopyalamaq üçün mətn yoxdur!');
+                return;
+            }
+            
+            // Mətn seçimi və kopyalama
+            latinText.select();
+            latinText.setSelectionRange(0, 99999);
+            
+            try {
+                document.execCommand('copy');
+                
+                // Uğurlu kopyalama bildirişi
+                const originalText = button.innerHTML;
+                button.innerHTML = '✅ Kopyalandı!';
+                button.style.background = '#3b82f6';
+                
                 setTimeout(() => {
-                    subscribeUser();
+                    button.innerHTML = originalText;
+                    button.style.background = '#10b981';
                 }, 2000);
-            }
-        });
-
-        function requestPermission() {
-            if ('Notification' in window) {
-                // Show loading state
-                const permissionBtn = document.getElementById('permissionBtn');
-                const originalText = permissionBtn.textContent;
-                permissionBtn.textContent = '⏳ İzin bekleniyor...';
-                permissionBtn.disabled = true;
                 
-                Notification.requestPermission().then(function(permission) {
-                    updatePermissionStatus();
-                    permissionBtn.disabled = false;
-                    
-                    if (permission === 'granted') {
-                        addLog('Bildirim izni verildi - Arka plan sistemi aktif', 'success');
-                        
-                        // Subscribe to push notifications
-                        subscribeUser();
-                        
-                        showToast('Bildirim İzni Verildi!', 'Artık arka planda bildirim gönderebiliriz 🎉');
-                        // Send a test notification
-                        setTimeout(() => {
-                            sendTestNotification();
-                        }, 1000);
-                    } else if (permission === 'denied') {
-                        addLog('Bildirim izni reddedildi', 'error');
-                        showToast('İzin Reddedildi', 'Tarayıcı ayarlarından bildirimleri açabilirsiniz');
-                        permissionBtn.textContent = originalText;
-                    } else {
-                        addLog('Bildirim izni beklemede', 'warning');
-                        permissionBtn.textContent = originalText;
-                    }
-                }).catch(function(error) {
-                    console.error('Permission request failed:', error);
-                    addLog('Bildirim izni hatası: ' + error.message, 'error');
-                    permissionBtn.textContent = originalText;
-                    permissionBtn.disabled = false;
-                    showToast('Hata', 'Bildirim izni alınamadı');
-                });
-            } else {
-                addLog('Tarayıcı bildirimleri desteklemiyor', 'error');
-                showToast('Uyarı', 'Tarayıcınız bildirimleri desteklemiyor');
+            } catch (err) {
+                alert('Kopyalama uğursuz oldu. Lütfən əl ilə seçib kopyalayın.');
             }
         }
 
-        function subscribeUser() {
-            if (!swRegistration) {
-                addLog('Service Worker henüz hazır değil', 'error');
-                return;
-            }
-
-            const applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
-            
-            swRegistration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: applicationServerKey
-            }).then(function(subscription) {
-                addLog('Push aboneliği başarılı - Arka plan bildirimleri aktif', 'success');
-                isSubscribed = true;
-                updateSubscriptionStatus();
-                
-                // Store subscription (in real app, send to server)
-                localStorage.setItem('pushSubscription', JSON.stringify(subscription));
-                
-            }).catch(function(err) {
-                addLog('Push aboneliği hatası: ' + err.message, 'error');
-                isSubscribed = false;
-                updateSubscriptionStatus();
-            });
-        }
-
-        function updateSubscriptionStatus() {
-            // This function can be used to update UI based on subscription status
-            if (isSubscribed) {
-                addLog('Push bildirimleri aktif - Arka planda çalışıyor', 'success');
-            }
-        }
-
-        function sendTestNotification() {
-            // Send via Service Worker
-            if (swRegistration && swRegistration.active) {
-                swRegistration.showNotification('🎉 Test Bildirimi', {
-                    body: 'Arka plan bildirimleri başarıyla aktif edildi! Siteden çıkılsa bile çalışacak.',
-                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS7VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                    badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS-VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                    tag: 'test-notification',
-                    requireInteraction: true,
-                    vibrate: [200, 100, 200],
-                    actions: [
-                        { action: 'view', title: '👀 Görüntüle' },
-                        { action: 'close', title: '❌ Kapat' }
-                    ]
-                });
-                addLog('Test arka plan bildirimi gönderildi', 'info');
-            }
-        }
-
-        function updatePermissionStatus() {
-            const statusEl = document.getElementById('status');
-            const permissionBtn = document.getElementById('permissionBtn');
-            
-            if ('Notification' in window) {
-                if (Notification.permission === 'granted') {
-                    statusEl.textContent = '✅ Bildirim izni verildi - Arka plan sistemi aktif';
-                    statusEl.className = 'text-center text-sm text-green-600';
-                    permissionBtn.style.display = 'none';
-                } else if (Notification.permission === 'denied') {
-                    statusEl.textContent = '❌ Bildirim izni reddedildi - Tarayıcı ayarlarından açabilirsiniz';
-                    statusEl.className = 'text-center text-sm text-red-600';
-                } else {
-                    statusEl.textContent = '⚠️ Bildirim izni bekleniyor';
-                    statusEl.className = 'text-center text-sm text-yellow-600';
-                }
-            }
-        }
-
-        function addNotification() {
-            const userName = document.getElementById('userName').value.trim();
-            const time = document.getElementById('notificationTime').value;
-            const dailyRepeat = document.getElementById('dailyRepeat').checked;
-            
-            if (!userName) {
-                showToast('Hata', 'Lütfen bildirim notunuzu yazın');
-                addLog('Bildirim ekleme hatası: Not boş', 'error');
-                return;
-            }
-            
-            if (!time) {
-                showToast('Hata', 'Lütfen bir saat seçin');
-                addLog('Bildirim ekleme hatası: Saat boş', 'error');
-                return;
-            }
-
-            // Check if time already exists with same repeat setting
-            if (notifications.some(n => n.time === time && n.dailyRepeat === dailyRepeat)) {
-                showToast('Hata', 'Bu saat için zaten aynı tipte bildirim var');
-                addLog(`Bildirim ekleme hatası: ${time} zaten mevcut`, 'error');
-                return;
-            }
-
-            const notification = {
-                id: Date.now(),
-                name: userName,
-                time: time,
-                dailyRepeat: dailyRepeat,
-                active: true,
-                lastSent: null
-            };
-
-            notifications.push(notification);
-            saveNotifications();
-            renderNotifications();
-            scheduleNotification(notification);
-            scheduleServiceWorkerNotification(notification);
-            
-            // Clear inputs
-            document.getElementById('notificationTime').value = '';
-            document.getElementById('dailyRepeat').checked = false;
-            
-            const repeatText = dailyRepeat ? ' (Her gün)' : ' (Tek seferlik)';
-            addLog(`Bildirim eklendi: ${userName} - ${time}${repeatText}`, 'success');
-            showToast('Başarılı!', `${time} için arka plan bildirimi eklendi${repeatText}`);
-        }
-
-        function removeNotification(id) {
-            notifications = notifications.filter(n => n.id !== id);
-            
-            // Clear existing interval for this notification
-            activeIntervals = activeIntervals.filter(interval => {
-                if (interval.id === id) {
-                    clearInterval(interval.intervalId);
-                    return false;
-                }
-                return true;
-            });
-            
-            // Cancel background notification
-            cancelServiceWorkerNotification(id);
-            
-            saveNotifications();
-            renderNotifications();
-            updateAllServiceWorkerNotifications();
-            showToast('Silindi', 'Bildirim kaldırıldı');
-        }
-
-        function toggleNotification(id) {
-            const notification = notifications.find(n => n.id === id);
-            if (notification) {
-                notification.active = !notification.active;
-                saveNotifications();
-                renderNotifications();
-                
-                if (notification.active) {
-                    scheduleNotification(notification);
-                    scheduleServiceWorkerNotification(notification);
-                    showToast('Aktif', 'Arka plan bildirimi açıldı');
-                } else {
-                    // Remove from active intervals
-                    activeIntervals = activeIntervals.filter(interval => {
-                        if (interval.id === id) {
-                            clearInterval(interval.intervalId);
-                            return false;
-                        }
-                        return true;
-                    });
-                    cancelServiceWorkerNotification(id);
-                    showToast('Pasif', 'Arka plan bildirimi kapatıldı');
-                }
-                
-                updateAllServiceWorkerNotifications();
-            }
-        }
-
-        function scheduleNotification(notification) {
-            if (!notification.active) return;
-            
-            // Clear existing interval for this notification
-            activeIntervals = activeIntervals.filter(interval => {
-                if (interval.id === notification.id) {
-                    clearInterval(interval.intervalId);
-                    return false;
-                }
-                return true;
-            });
-
-            const intervalId = setInterval(() => {
-                const now = new Date();
-                const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
-                                  now.getMinutes().toString().padStart(2, '0');
-                const today = now.toDateString();
-                
-                if (currentTime === notification.time && notification.active) {
-                    // Check if we should send the notification
-                    if (notification.dailyRepeat) {
-                        // For daily notifications, check if we already sent today
-                        if (notification.lastSent !== today) {
-                            sendNotification(notification);
-                            notification.lastSent = today;
-                            saveNotifications();
-                        }
-                    } else {
-                        // For one-time notifications, send once and deactivate
-                        if (!notification.lastSent) {
-                            sendNotification(notification);
-                            notification.lastSent = today;
-                            notification.active = false;
-                            saveNotifications();
-                            renderNotifications();
-                            
-                            // Remove from active intervals since it's now inactive
-                            activeIntervals = activeIntervals.filter(interval => interval.id !== notification.id);
-                            clearInterval(intervalId);
-                        }
-                    }
-                }
-            }, 30000); // Check every 30 seconds for better accuracy
-
-            activeIntervals.push({
-                id: notification.id,
-                intervalId: intervalId
-            });
-        }
-
-        function scheduleServiceWorkerNotification(notification) {
-            if ('serviceWorker' in navigator && swRegistration && swRegistration.active) {
-                swRegistration.active.postMessage({
-                    type: 'SCHEDULE_NOTIFICATION',
-                    id: notification.id,
-                    name: notification.name,
-                    time: notification.time,
-                    dailyRepeat: notification.dailyRepeat,
-                    active: notification.active
-                });
-                addLog(`Arka plan bildirimi planlandı: ${notification.time} - ${notification.name}`, 'success');
-            } else {
-                addLog('Service Worker henüz hazır değil, arka plan bildirimi planlanamadı', 'warning');
-            }
-        }
-
-        function cancelServiceWorkerNotification(notificationId) {
-            if ('serviceWorker' in navigator && swRegistration && swRegistration.active) {
-                swRegistration.active.postMessage({
-                    type: 'CANCEL_NOTIFICATION',
-                    id: notificationId
-                });
-                addLog(`Arka plan bildirimi iptal edildi: ${notificationId}`, 'info');
-            }
-        }
-
-        function updateAllServiceWorkerNotifications() {
-            if ('serviceWorker' in navigator && swRegistration && swRegistration.active) {
-                swRegistration.active.postMessage({
-                    type: 'UPDATE_NOTIFICATIONS',
-                    notifications: notifications
-                });
-                addLog(`Tüm arka plan bildirimleri güncellendi (${notifications.filter(n => n.active).length} aktif)`, 'info');
-            }
-        }
-
-        function sendNotification(notification) {
-            const message = `${notification.name}`;
-            
-            // Send via Service Worker (like news sites)
-            if (swRegistration && swRegistration.active && Notification.permission === 'granted') {
-                swRegistration.showNotification('⏰ Hatırlatma Zamanı!', {
-                    body: message,
-                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS7VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                    badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0Qjc2ODgiLz4KPHN2ZyB4PSIxNiIgeT0iMTYiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xMiAyQzEzLjEgMiAxNCAyLjkgMTQgNFY1LjFDMTYuOCA2LjIgMTguNyA4LjcgMTguNyAxMS-VjE2TDIwIDEySDRMMTIgMjJMMjAgMTJIMTguN1YxMS7QzE4LjcgOC43IDE2LjggNi4yIDE0IDUuMVY0QzE0IDIuOSAxMy4xIDIgMTIgMloiLz4KPC9zdmc+Cjwvc3ZnPgo=',
-                    tag: 'personal-notification-' + notification.id,
-                    requireInteraction: true,
-                    actions: [
-                        { action: 'view', title: '👀 Görüntüle' },
-                        { action: 'close', title: '❌ Kapat' }
-                    ],
-                    vibrate: [200, 100, 200], // Mobile vibration
-                    silent: false
-                });
-                addLog(`Arka plan push bildirimi gönderildi: ${notification.name}`, 'success');
-            } else if (Notification.permission === 'granted') {
-                // Fallback to regular notification
-                new Notification('⏰ Hatırlatma Zamanı!', {
-                    body: message,
-                    icon: '🔔',
-                    tag: 'personal-notification-' + notification.id,
-                    requireInteraction: true
-                });
-                addLog(`Standart bildirim gönderildi: ${notification.name}`, 'success');
-            }
-            
-            // Check if mobile device for in-app notification
-            const isMobile = window.innerWidth <= 768;
-            
-            if (isMobile) {
-                // Show mobile notification
-                showMobileNotification('⏰ Hatırlatma Zamanı!', notification.name);
-            } else {
-                // Show desktop toast
-                showToast(`⏰ Hatırlatma Zamanı!`, `${notification.name}`);
-            }
-        }
-
-        function renderNotifications() {
-            const listEl = document.getElementById('notificationList');
-            
-            if (notifications.length === 0) {
-                listEl.innerHTML = `
-                    <div class="text-gray-500 text-center py-8 border border-dashed border-gray-300 rounded-lg">
-                        Henüz bildirim eklenmedi
-                    </div>
-                `;
-                return;
-            }
-
-            listEl.innerHTML = notifications.map(notification => `
-                <div class="bg-gray-50 rounded-lg border p-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
-                        <div class="flex items-center space-x-3">
-                            <div class="text-2xl">${notification.active ? '🔔' : '🔕'}</div>
-                            <div>
-                                <div class="font-semibold text-gray-800">${notification.name}</div>
-                                <div class="text-lg text-blue-600 font-mono">${notification.time}</div>
-                                <div class="text-sm ${notification.dailyRepeat ? 'text-blue-600' : 'text-orange-600'}">
-                                    ${notification.dailyRepeat ? '📅 Her gün (Arka planda)' : '📍 Tek seferlik (Arka planda)'}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <button onclick="toggleNotification(${notification.id})" 
-                                    class="px-3 py-2 rounded-lg text-sm font-medium ${
-                                        notification.active 
-                                            ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
-                                            : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                    }">
-                                ${notification.active ? 'Duraklat' : 'Aktifleştir'}
-                            </button>
-                            <button onclick="removeNotification(${notification.id})" 
-                                    class="px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200">
-                                Sil
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function showToast(title, message) {
-            const toast = document.getElementById('notificationToast');
-            const titleEl = document.getElementById('toastTitle');
-            const messageEl = document.getElementById('toastMessage');
-            
-            titleEl.textContent = title;
-            messageEl.textContent = message;
-            
-            toast.classList.remove('hidden');
-            
-            setTimeout(() => {
-                closeToast();
-            }, 5000);
-        }
-
-        function closeToast() {
-            const toast = document.getElementById('notificationToast');
-            toast.classList.add('fade-out');
-            setTimeout(() => {
-                toast.classList.add('hidden');
-                toast.classList.remove('fade-out');
-            }, 300);
-        }
-
-        function showMobileNotification(title, message) {
-            const mobileNotification = document.getElementById('mobileNotification');
-            const titleEl = document.getElementById('mobileTitle');
-            const messageEl = document.getElementById('mobileMessage');
-            
-            titleEl.textContent = title;
-            messageEl.textContent = message;
-            
-            mobileNotification.classList.add('show');
-            
-            // Auto hide after 5 seconds
-            setTimeout(() => {
-                closeMobileNotification();
-            }, 5000);
-        }
-
-        function closeMobileNotification() {
-            const mobileNotification = document.getElementById('mobileNotification');
-            mobileNotification.classList.remove('show');
-        }
-
-        function saveNotifications() {
-            localStorage.setItem('personalNotifications', JSON.stringify(notifications));
-        }
-
-        function addLog(message, type = 'info') {
-            const timestamp = new Date().toLocaleString('tr-TR');
-            const log = {
-                id: Date.now(),
-                message: message,
-                type: type,
-                timestamp: timestamp
-            };
-            
-            logs.unshift(log); // Add to beginning
-            
-            // Keep only last 50 logs
-            if (logs.length > 50) {
-                logs = logs.slice(0, 50);
-            }
-            
-            saveLogs();
-            renderLogs();
-        }
-
-        function renderLogs() {
-            const logList = document.getElementById('logList');
-            
-            if (logs.length === 0) {
-                logList.innerHTML = '<div class="text-gray-500 text-sm">Henüz log kaydı yok</div>';
-                return;
-            }
-            
-            const logColors = {
-                success: 'text-green-600',
-                error: 'text-red-600',
-                warning: 'text-yellow-600',
-                info: 'text-blue-600'
-            };
-            
-            const logIcons = {
-                success: '✅',
-                error: '❌',
-                warning: '⚠️',
-                info: 'ℹ️'
-            };
-            
-            logList.innerHTML = logs.map(log => `
-                <div class="flex items-start space-x-2 py-1 border-b border-gray-200 last:border-b-0">
-                    <span class="text-sm">${logIcons[log.type] || 'ℹ️'}</span>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-sm ${logColors[log.type] || 'text-gray-600'}">${log.message}</div>
-                        <div class="text-xs text-gray-400">${log.timestamp}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function clearLogs() {
-            logs = [];
-            saveLogs();
-            renderLogs();
-            addLog('Loglar temizlendi', 'info');
-        }
-
-        function saveLogs() {
-            localStorage.setItem('systemLogs', JSON.stringify(logs));
-        }
-
-        function loadLogs() {
-            const saved = localStorage.getItem('systemLogs');
-            if (saved) {
-                logs = JSON.parse(saved);
-                renderLogs();
-            }
-        }
-
-        function loadNotifications() {
-            const saved = localStorage.getItem('personalNotifications');
-            if (saved) {
-                notifications = JSON.parse(saved);
-                renderNotifications();
-                addLog(`${notifications.length} bildirim yüklendi - Arka plan sistemi hazırlanıyor`, 'info');
-                
-                // Reschedule all active notifications
-                notifications.forEach(notification => {
-                    if (notification.active) {
-                        scheduleNotification(notification);
-                        scheduleServiceWorkerNotification(notification);
-                    }
-                });
-                
-                // Update service worker with all notifications
-                setTimeout(() => {
-                    updateAllServiceWorkerNotifications();
-                }, 3000);
-            }
-        }
+        // Səhifə yükləndikdə fokus
+        window.onload = function() {
+            document.getElementById('kirilText').focus();
+        };
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9884763e74119938',t:'MTc1OTQxMDg1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98965ae45109e8f2',t:'MTc1OTU5ODQ4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
