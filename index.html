@@ -5,204 +5,224 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kiril-Latın Çevirici</title>
     <style>
-        body {
-            box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        * {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #fafafa;
+            color: #2c2c2c;
+            transition: all 0.3s ease;
             min-height: 100vh;
+            padding: 30px 20px;
+            line-height: 1.5;
+        }
+
+        body.dark {
+            background: #0f0f0f;
+            color: #f0f0f0;
+        }
+
+        .header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            color: #1e293b;
-        }
-        
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            box-shadow: 
-                0 25px 50px -12px rgba(0, 0, 0, 0.25),
-                0 0 0 1px rgba(255, 255, 255, 0.2);
-            padding: 48px;
-            width: 100%;
             max-width: 900px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            margin: 0 auto 50px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e8e8e8;
         }
-        
+
+        body.dark .header {
+            border-bottom-color: #2a2a2a;
+        }
+
         .title {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        
-        .title h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 12px;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a1a1a;
             letter-spacing: -0.02em;
         }
-        
-        .title p {
-            color: #64748b;
-            font-size: 1.2rem;
-            font-weight: 500;
+
+        body.dark .title {
+            color: #ffffff;
         }
-        
-        .converter-grid {
+
+        .theme-toggle {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        body.dark .theme-toggle {
+            background: #1a1a1a;
+            border-color: #333;
+            color: #f0f0f0;
+            box-shadow: 0 2px 8px rgba(255,255,255,0.05);
+        }
+
+        .theme-toggle:hover {
+            background: #f8f8f8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        body.dark .theme-toggle:hover {
+            background: #2a2a2a;
+            box-shadow: 0 4px 12px rgba(255,255,255,0.1);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .converter {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 32px;
-            margin-bottom: 40px;
+            gap: 30px;
+            margin-bottom: 30px;
         }
-        
+
         @media (max-width: 768px) {
-            .converter-grid {
+            .converter {
                 grid-template-columns: 1fr;
-                gap: 24px;
+                gap: 25px;
             }
         }
-        
-        .input-section {
+
+        .input-group {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
         }
-        
+
         .label {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #374151;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 4px;
         }
-        
+
+        body.dark .label {
+            color: #b0b0b0;
+        }
+
         .textarea {
             width: 100%;
             height: 320px;
-            padding: 24px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 16px;
-            font-size: 1.1rem;
-            font-family: inherit;
-            resize: none;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            line-height: 1.6;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        
-        .textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
-            background: rgba(255, 255, 255, 0.95);
-            transform: translateY(-2px);
-        }
-        
-        .textarea.readonly {
-            background: rgba(248, 250, 252, 0.9);
-            color: #374151;
-            cursor: default;
-        }
-        
-        .button {
-            width: 100%;
-            padding: 16px 24px;
-            border: none;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
             border-radius: 12px;
             font-size: 1rem;
+            font-family: inherit;
+            resize: none;
+            background: #ffffff;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            line-height: 1.6;
+        }
+
+        body.dark .textarea {
+            background: #1a1a1a;
+            border-color: #333;
+            color: #f0f0f0;
+            box-shadow: 0 2px 8px rgba(255,255,255,0.04);
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0,122,255,0.1);
+            transform: translateY(-1px);
+        }
+
+        .textarea.readonly {
+            background: #f8f9fa;
+            cursor: default;
+        }
+
+        body.dark .textarea.readonly {
+            background: #151515;
+        }
+
+        .button {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .button-clear {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: white;
-        }
-        
-        .button-clear:hover {
-            background: linear-gradient(135deg, #dc2626, #b91c1c);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
-        }
-        
-        .button-copy {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-        }
-        
-        .button-copy:hover {
-            background: linear-gradient(135deg, #059669, #047857);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
+        .button-clear {
+            background: #ff3b30;
+            color: white;
+        }
+
+        .button-clear:hover {
+            background: #e8342a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255,59,48,0.3);
+        }
+
+        .button-copy {
+            background: #007aff;
+            color: white;
+        }
+
+        .button-copy:hover {
+            background: #0066cc;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+        }
+
+        .button-copy.copied {
+            background: #34c759;
+            box-shadow: 0 4px 12px rgba(52,199,89,0.3);
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="title">
-            <h1>🔤 Kiril → Latın Çevirici</h1>
-            <p>Kiril hərflərini latın hərflərinə çevirin</p>
-        </div>
+    <div class="header">
+        <h1 class="title">Kiril → Latın</h1>
+        <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </div>
 
-        <div class="converter-grid">
-            <!-- Kiril mətn sahəsi -->
-            <div class="input-section">
-                <label class="label">
-                    📝 Kiril mətni daxil edin
-                </label>
+    <div class="container">
+        <div class="converter">
+            <div class="input-group">
+                <label class="label">Kiril mətn</label>
                 <textarea 
                     id="kirilText" 
-                    placeholder="Kiril hərfləri ilə mətn yazın..."
+                    placeholder="Kiril hərfləri ilə yazın..."
                     class="textarea"
                     oninput="convertText()"
                 ></textarea>
-                <button 
-                    onclick="clearText()" 
-                    class="button button-clear"
-                >
-                    🗑️ Təmizlə
-                </button>
+                <button onclick="clearText()" class="button button-clear">Təmizlə</button>
             </div>
 
-            <!-- Latın mətn sahəsi -->
-            <div class="input-section">
-                <label class="label">
-                    ✨ Latın nəticəsi
-                </label>
+            <div class="input-group">
+                <label class="label">Latın mətn</label>
                 <textarea 
                     id="latinText" 
-                    placeholder="Çevrilmiş mətn burada görünəcək..."
+                    placeholder="Çevrilmiş mətn..."
                     class="textarea readonly"
                     readonly
                 ></textarea>
-                <button 
-                    onclick="copyText()" 
-                    class="button button-copy"
-                    id="copyButton"
-                >
-                    📋 Kopyala
-                </button>
+                <button onclick="copyText()" class="button button-copy" id="copyButton">Kopyala</button>
             </div>
         </div>
-
-
     </div>
 
     <script>
@@ -270,36 +290,55 @@
             const textToCopy = latinText.value;
             
             if (!textToCopy.trim()) {
-                alert('Kopyalamaq üçün mətn yoxdur!');
                 return;
             }
             
-            // Mətn seçimi və kopyalama
             latinText.select();
             latinText.setSelectionRange(0, 99999);
             
             try {
                 document.execCommand('copy');
                 
-                // Uğurlu kopyalama bildirişi
                 const originalText = button.innerHTML;
-                button.innerHTML = '✅ Kopyalandı!';
-                button.style.background = '#3b82f6';
+                button.innerHTML = 'Kopyalandı ✓';
+                button.classList.add('copied');
                 
                 setTimeout(() => {
                     button.innerHTML = originalText;
-                    button.style.background = '#10b981';
-                }, 2000);
+                    button.classList.remove('copied');
+                }, 1500);
                 
             } catch (err) {
-                alert('Kopyalama uğursuz oldu. Lütfən əl ilə seçib kopyalayın.');
+                console.log('Kopyalama xətası');
             }
         }
 
-        // Səhifə yükləndikdə fokus
+        function toggleTheme() {
+            const body = document.body;
+            const button = document.querySelector('.theme-toggle');
+            
+            body.classList.toggle('dark');
+            
+            if (body.classList.contains('dark')) {
+                button.innerHTML = '☀️';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                button.innerHTML = '🌙';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Səhifə yükləndikdə
         window.onload = function() {
+            // Saxlanmış tema yüklə
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark');
+                document.querySelector('.theme-toggle').innerHTML = '☀️';
+            }
+            
             document.getElementById('kirilText').focus();
         };
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98965ae45109e8f2',t:'MTc1OTU5ODQ4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98966547533fe8f2',t:'MTc1OTU5ODkwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
