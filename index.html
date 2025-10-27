@@ -1,344 +1,455 @@
 <!DOCTYPE html>
 <html lang="az">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kiril-Latın Çevirici</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kiril → Latın Çevirici</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root[data-theme='dark'] {
+      --bg: #0b0b0c;
+      --card: #111214;
+      --muted: #9aa0a6;
+      --text: #e6e7e9;
+      --brand: #4f46e5;
+      --brand-2: #22d3ee;
+      --ring: 0 0 0 3px rgba(79,70,229,.12);
+      --shadow-1: 0 10px 30px rgba(0,0,0,.25);
+      --shadow-2: 0 20px 60px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            background: #fafafa;
-            color: #2c2c2c;
-            transition: all 0.3s ease;
-            min-height: 100vh;
-            padding: 30px 20px;
-            line-height: 1.5;
-        }
+    :root[data-theme='light'] {
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --muted: #667085;
+      --text: #101114;
+      --brand: #4f46e5;
+      --brand-2: #06b6d4;
+      --ring: 0 0 0 3px rgba(79,70,229,.16);
+      --shadow-1: 0 10px 30px rgba(16,24,40,.08);
+      --shadow-2: 0 24px 64px rgba(16,24,40,.12);
+      --radius: 16px;
+    }
 
-        body.dark {
-            background: #0f0f0f;
-            color: #f0f0f0;
-        }
+    * { box-sizing: border-box; }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 900px;
-            margin: 0 auto 50px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e8e8e8;
-        }
+    html, body { height: 100%; }
 
-        body.dark .header {
-            border-bottom-color: #2a2a2a;
-        }
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(79,70,229,.16), transparent 60%),
+                  radial-gradient(1200px 800px at 90% 0%, rgba(34,211,238,.12), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
 
-        .title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1a1a1a;
-            letter-spacing: -0.02em;
-        }
+    :root[data-theme='light'] body {
+      background: radial-gradient(1000px 700px at 10% -10%, rgba(79,70,229,.12), transparent 60%),
+                  radial-gradient(1000px 700px at 90% 0%, rgba(6,182,212,.10), transparent 55%),
+                  var(--bg);
+    }
 
-        body.dark .title {
-            color: #ffffff;
-        }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
 
-        .theme-toggle {
-            background: #ffffff;
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 12px 16px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
 
-        body.dark .theme-toggle {
-            background: #1a1a1a;
-            border-color: #333;
-            color: #f0f0f0;
-            box-shadow: 0 2px 8px rgba(255,255,255,0.05);
-        }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-size: 20px;
+    }
 
-        .theme-toggle:hover {
-            background: #f8f8f8;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
+    .logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: inset 0 0 12px rgba(255,255,255,.12), var(--shadow-1);
+    }
 
-        body.dark .theme-toggle:hover {
-            background: #2a2a2a;
-            box-shadow: 0 4px 12px rgba(255,255,255,0.1);
-        }
+    .actions { display: flex; align-items: center; gap: 10px; }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+    .theme {
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      height: 40px;
+      padding: 0 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: .2s ease;
+      backdrop-filter: blur(6px);
+    }
+    .theme:hover { background: rgba(255,255,255,.08); transform: translateY(-1px); }
 
-        .converter {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
+    :root[data-theme='light'] .theme {
+      border: 1px solid rgba(16,24,40,.10);
+      background: rgba(255,255,255,.85);
+    }
+    :root[data-theme='light'] .theme:hover { background: #ffffff; }
 
-        @media (max-width: 768px) {
-            .converter {
-                grid-template-columns: 1fr;
-                gap: 25px;
-            }
-        }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) { .hero { grid-template-columns: 1fr; gap: 8px; } }
 
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+    .title {
+      font-weight: 800;
+      font-size: clamp(28px, 5vw, 44px);
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+      margin: 0;
+    }
 
-        .label {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 4px;
-        }
+    .subtitle { color: var(--muted); margin-top: 10px; }
 
-        body.dark .label {
-            color: #b0b0b0;
-        }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(79,70,229,.2), rgba(79,70,229,.08));
+      border: 1px solid rgba(79,70,229,.25);
+      color: #dfe0ff;
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
 
-        .textarea {
-            width: 100%;
-            height: 320px;
-            padding: 20px;
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-family: inherit;
-            resize: none;
-            background: #ffffff;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            line-height: 1.6;
-        }
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow-2);
+      backdrop-filter: blur(10px);
+    }
 
-        body.dark .textarea {
-            background: #1a1a1a;
-            border-color: #333;
-            color: #f0f0f0;
-            box-shadow: 0 2px 8px rgba(255,255,255,0.04);
-        }
+    :root[data-theme='light'] .panel {
+      background: #ffffff;
+      border: 1px solid rgba(16,24,40,.10);
+    }
 
-        .textarea:focus {
-            outline: none;
-            border-color: #007aff;
-            box-shadow: 0 0 0 3px rgba(0,122,255,0.1);
-            transform: translateY(-1px);
-        }
+    .converter {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 900px) { .converter { grid-template-columns: 1fr; } }
 
-        .textarea.readonly {
-            background: #f8f9fa;
-            cursor: default;
-        }
+    .group { display: flex; flex-direction: column; gap: 10px; }
 
-        body.dark .textarea.readonly {
-            background: #151515;
-        }
+    .label { color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: .02em; }
 
-        .button {
-            padding: 14px 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
+    .field {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(8,9,10,.6);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+    }
 
-        .button-clear {
-            background: #ff3b30;
-            color: white;
-        }
+    :root[data-theme='light'] .field {
+      border: 1px solid rgba(16,24,40,.10);
+      background: #fafafb;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+    }
 
-        .button-clear:hover {
-            background: #e8342a;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255,59,48,0.3);
-        }
+    textarea {
+      width: 100%;
+      min-height: 320px;
+      border: none;
+      outline: none;
+      resize: none;
+      background: transparent;
+      color: var(--text);
+      padding: 18px 16px 52px;
+      font-size: 16px;
+      line-height: 1.65;
+      caret-color: var(--brand);
+      white-space: pre-wrap;
+      tab-size: 4;
+      font-variant-ligatures: none;
+    }
 
-        .button-copy {
-            background: #007aff;
-            color: white;
-        }
+    .toolbar {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+    }
 
-        .button-copy:hover {
-            background: #0066cc;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,122,255,0.3);
-        }
+    :root[data-theme='light'] .toolbar {
+      background: rgba(16,24,40,.03);
+      border: 1px solid rgba(16,24,40,.08);
+    }
 
-        .button-copy.copied {
-            background: #34c759;
-            box-shadow: 0 4px 12px rgba(52,199,89,0.3);
-        }
-    </style>
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      height: 40px;
+      padding: 0 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+    .btn:hover { transform: translateY(-1px); background: rgba(255,255,255,.1); box-shadow: var(--ring); }
+
+    .btn.primary { background: linear-gradient(180deg, rgba(79,70,229,.85), rgba(79,70,229,.65)); border-color: rgba(79,70,229,.5); }
+    .btn.primary:hover { background: linear-gradient(180deg, rgba(79,70,229,1), rgba(79,70,229,.85)); }
+
+    :root[data-theme='light'] .btn {
+      border: 1px solid rgba(16,24,40,.1);
+      background: #ffffff;
+    }
+    :root[data-theme='light'] .btn:hover { background: #f8fafc; }
+
+    .count { color: var(--muted); font-size: 12px; }
+
+    .divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent); margin: 18px 0; border: none; }
+    :root[data-theme='light'] .divider { background: linear-gradient(90deg, transparent, rgba(0,0,0,.08), transparent); }
+
+    .footer { color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      font-size: 12px;
+      color: var(--text);
+    }
+    :root[data-theme='light'] .pill { background: #ffffff; border-color: rgba(16,24,40,.1); }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      background: linear-gradient(180deg, rgba(34,197,94,.18), rgba(34,197,94,.1));
+      border: 1px solid rgba(34,197,94,.35);
+      color: #d8ffe4;
+      padding: 12px 14px;
+      border-radius: 12px;
+      transform: translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: .25s ease;
+      box-shadow: var(--shadow-1);
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+  </style>
 </head>
 <body>
-    <div class="header">
-        <h1 class="title">Kiril → Latın</h1>
-        <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+  <div class="container">
+    <div class="nav">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <span>Kiril → Latın</span>
+      </div>
+      <div class="actions">
+        <button class="theme" id="themeToggle" aria-label="Tema dəyiş">
+          <span id="themeIcon">🌙</span>
+          <span>Temanı dəyiş</span>
+        </button>
+      </div>
     </div>
 
-    <div class="container">
-        <div class="converter">
-            <div class="input-group">
-                <label class="label">Kiril mətn</label>
-                <textarea 
-                    id="kirilText" 
-                    placeholder="Kiril hərfləri ilə yazın..."
-                    class="textarea"
-                    oninput="convertText()"
-                ></textarea>
-                <button onclick="clearText()" class="button button-clear">Təmizlə</button>
-            </div>
+    <div class="hero">
+      <div>
+        <div class="badge">Canlı çevirmə • Ani nəticə</div>
+        <h1 class="title">Kiril → Latın çeviricisi ilə yazını dərhal çevir.</h1>
+        <p class="subtitle">Mətninizi sol sahəyə yazın. Sağdakı nəticəni kopyalayın. Tünd/işıq tema, mobil uyğunluq və peşəkar görünüş.</p>
+      </div>
+    </div>
 
-            <div class="input-group">
-                <label class="label">Latın mətn</label>
-                <textarea 
-                    id="latinText" 
-                    placeholder="Çevrilmiş mətn..."
-                    class="textarea readonly"
-                    readonly
-                ></textarea>
-                <button onclick="copyText()" class="button button-copy" id="copyButton">Kopyala</button>
+    <div class="panel">
+      <div class="converter">
+        <div class="group">
+          <label class="label">Kiril mətn</label>
+          <div class="field">
+            <textarea id="kirilText" placeholder="Kiril hərfləri ilə yazın..."></textarea>
+            <div class="toolbar">
+              <button class="btn" id="clearBtn">Təmizlə</button>
+              <span class="count" id="leftCount">0 simvol</span>
             </div>
+          </div>
         </div>
+
+        <div class="group">
+          <label class="label">Latın mətn</label>
+          <div class="field">
+            <textarea id="latinText" placeholder="Çevrilmiş mətn..." readonly></textarea>
+            <div class="toolbar">
+              <button class="btn primary" id="copyBtn">Kopyala</button>
+              <span class="count" id="rightCount">0 simvol</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="footer">
+        <span>Ən yaxşı nəticə üçün mətni düzgün kiril əlifbası ilə daxil edin.</span>
+      </div>
     </div>
+  </div>
 
-    <script>
-        // Çevirmə cədvəli
-        const conversionMap = {
-            'А': 'A', 'а': 'a',
-            'Б': 'B', 'б': 'b',
-            'В': 'V', 'в': 'v',
-            'Г': 'Q', 'г': 'q',
-            'Д': 'D', 'д': 'd',
-            'Е': 'E', 'е': 'e',
-            'Ё': 'Yo', 'ё': 'yo',
-            'Ж': 'J', 'ж': 'j',
-            'З': 'Z', 'з': 'z',
-            'И': 'I', 'и': 'i',
-            'Й': 'Y', 'й': 'y',
-            'К': 'K', 'к': 'k',
-            'Л': 'L', 'л': 'l',
-            'М': 'M', 'м': 'm',
-            'Н': 'N', 'н': 'n',
-            'О': 'O', 'о': 'o',
-            'П': 'P', 'п': 'p',
-            'Р': 'R', 'р': 'r',
-            'С': 'S', 'с': 's',
-            'Т': 'T', 'т': 't',
-            'У': 'U', 'у': 'u',
-            'Ф': 'F', 'ф': 'f',
-            'Х': 'X', 'х': 'x',
-            'Ц': 'Ü', 'ц': 'ü',
-            'Ч': 'Ç', 'ч': 'ç',
-            'Ш': 'Ş', 'ш': 'ş',
-            'Щ': 'H', 'щ': 'h',
-            'Ъ': 'C', 'ъ': 'c',
-            'Ы': 'I', 'ы': 'ı',
-            'Ь': 'Ğ', 'ь': 'ğ',
-            'Э': 'G', 'э': 'g',
-            'Ю': 'Ö', 'ю': 'ö',
-            'Я': 'Ə', 'я': 'ə'
-        };
+  <div class="toast" id="toast">Kopyalandı ✓</div>
 
-        function convertText() {
-            const kirilText = document.getElementById('kirilText').value;
-            let latinText = '';
-            
-            for (let char of kirilText) {
-                if (conversionMap.hasOwnProperty(char)) {
-                    latinText += conversionMap[char];
-                } else {
-                    latinText += char; // Kiril olmayan hərfləri olduğu kimi saxla
-                }
-            }
-            
-            document.getElementById('latinText').value = latinText;
+  <script>
+    const conversionMap = {
+      'А': 'A', 'а': 'a',
+      'Б': 'B', 'б': 'b',
+      'В': 'V', 'в': 'v',
+      'Г': 'Q', 'г': 'q',
+      'Д': 'D', 'д': 'd',
+      'Е': 'E', 'е': 'e',
+      'Ё': 'Yo', 'ё': 'yo',
+      'Ж': 'J', 'ж': 'j',
+      'З': 'Z', 'з': 'z',
+      'И': 'I', 'и': 'i',
+      'Й': 'Y', 'й': 'y',
+      'К': 'K', 'к': 'k',
+      'Л': 'L', 'л': 'l',
+      'М': 'M', 'м': 'm',
+      'Н': 'N', 'н': 'n',
+      'О': 'O', 'о': 'o',
+      'П': 'P', 'п': 'p',
+      'Р': 'R', 'р': 'r',
+      'С': 'S', 'с': 's',
+      'Т': 'T', 'т': 't',
+      'У': 'U', 'у': 'u',
+      'Ф': 'F', 'ф': 'f',
+      'Х': 'X', 'х': 'x',
+      'Ц': 'Ü', 'ц': 'ü',
+      'Ч': 'Ç', 'ч': 'ç',
+      'Ш': 'Ş', 'ш': 'ş',
+      'Щ': 'H', 'щ': 'h',
+      'Ъ': 'C', 'ъ': 'c',
+      'Ы': 'I', 'ы': 'ı',
+      'Ь': 'Ğ', 'ь': 'ğ',
+      'Э': 'G', 'э': 'g',
+      'Ю': 'Ö', 'ю': 'ö',
+      'Я': 'Ə', 'я': 'ə'
+    };
+
+    const kiril = document.getElementById('kirilText');
+    const latin = document.getElementById('latinText');
+    const leftCount = document.getElementById('leftCount');
+    const rightCount = document.getElementById('rightCount');
+    const clearBtn = document.getElementById('clearBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const toast = document.getElementById('toast');
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+
+    function convertText() {
+      const src = kiril.value;
+      let out = '';
+      for (const ch of src) out += conversionMap.hasOwnProperty(ch) ? conversionMap[ch] : ch;
+      latin.value = out;
+      leftCount.textContent = `${src.length} simvol`;
+      rightCount.textContent = `${out.length} simvol`;
+    }
+
+    function clearText() {
+      kiril.value = '';
+      latin.value = '';
+      leftCount.textContent = '0 simvol';
+      rightCount.textContent = '0 simvol';
+      kiril.focus();
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1400);
+    }
+
+    async function copyText() {
+      const value = latin.value;
+      if (!value.trim()) return;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(value);
+        } else {
+          latin.select();
+          document.execCommand('copy');
         }
+        showToast('Kopyalandı ✓');
+      } catch { showToast('Kopyalama xətası'); }
+    }
 
-        function clearText() {
-            document.getElementById('kirilText').value = '';
-            document.getElementById('latinText').value = '';
-            document.getElementById('kirilText').focus();
-        }
+    function applyTheme(theme) {
+      const dark = theme === 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+      themeIcon.textContent = dark ? '☀️' : '🌙';
+      localStorage.setItem('theme', theme);
+    }
 
-        function copyText() {
-            const latinText = document.getElementById('latinText');
-            const button = document.getElementById('copyButton');
-            const textToCopy = latinText.value;
-            
-            if (!textToCopy.trim()) {
-                return;
-            }
-            
-            latinText.select();
-            latinText.setSelectionRange(0, 99999);
-            
-            try {
-                document.execCommand('copy');
-                
-                const originalText = button.innerHTML;
-                button.innerHTML = 'Kopyalandı ✓';
-                button.classList.add('copied');
-                
-                setTimeout(() => {
-                    button.innerHTML = originalText;
-                    button.classList.remove('copied');
-                }, 1500);
-                
-            } catch (err) {
-                console.log('Kopyalama xətası');
-            }
-        }
+    function toggleTheme() {
+      const current = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+    }
 
-        function toggleTheme() {
-            const body = document.body;
-            const button = document.querySelector('.theme-toggle');
-            
-            body.classList.toggle('dark');
-            
-            if (body.classList.contains('dark')) {
-                button.innerHTML = '☀️';
-                localStorage.setItem('theme', 'dark');
-            } else {
-                button.innerHTML = '🌙';
-                localStorage.setItem('theme', 'light');
-            }
-        }
+    themeToggle.addEventListener('click', toggleTheme);
+    kiril.addEventListener('input', convertText);
+    clearBtn.addEventListener('click', clearText);
+    copyBtn.addEventListener('click', copyText);
 
-        // Səhifə yükləndikdə
-        window.onload = function() {
-            // Saxlanmış tema yüklə
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') {
-                document.body.classList.add('dark');
-                document.querySelector('.theme-toggle').innerHTML = '☀️';
-            }
-            
-            document.getElementById('kirilText').focus();
-        };
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98966547533fe8f2',t:'MTc1OTU5ODkwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+    window.addEventListener('load', () => {
+      const saved = localStorage.getItem('theme');
+      const initial = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      applyTheme(initial);
+      kiril.focus();
+    });
+  </script>
+</body>
 </html>
