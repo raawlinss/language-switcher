@@ -157,6 +157,12 @@
       background: #ffffff;
       border: 1px solid rgba(16,24,40,.10);
     }
+    
+    :root[data-theme='light'] .badge {
+      color: #1f2937;
+      background: linear-gradient(180deg, rgba(79,70,229,.10), rgba(79,70,229,.04));
+      border-color: rgba(79,70,229,.25);
+    }
 
     .converter {
       display: grid;
@@ -281,6 +287,12 @@
       box-shadow: var(--shadow-1);
     }
     .toast.show { transform: translateY(0); opacity: 1; }
+    
+    :root[data-theme='light'] .toast {
+      background: linear-gradient(180deg, rgba(34,197,94,.14), rgba(34,197,94,.08));
+      border-color: rgba(34,197,94,.35);
+      color: #14532d;
+    }
   </style>
 </head>
 <body>
@@ -292,7 +304,7 @@
       </div>
       <div class="actions">
         <button class="theme" id="themeToggle" aria-label="Tema dəyiş">
-          <span id="themeIcon">🌙</span>
+          <span id="themeIcon" aria-hidden="true"></span>
           <span>Temanı dəyiş</span>
         </button>
       </div>
@@ -342,6 +354,11 @@
   <div class="toast" id="toast">Kopyalandı ✓</div>
 
   <script>
+    const icons = {
+      sun: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 4V2M12 22v-2M4.93 4.93 3.52 3.52M20.48 20.48l-1.41-1.41M4 12H2M22 12h-2M4.93 19.07 3.52 20.48M20.48 3.52 19.07 4.93" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/></svg>',
+      moon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    };
+
     const conversionMap = {
       'А': 'A', 'а': 'a',
       'Б': 'B', 'б': 'b',
@@ -391,7 +408,7 @@
     function convertText() {
       const src = kiril.value;
       let out = '';
-      for (const ch of src) out += conversionMap.hasOwnProperty(ch) ? conversionMap[ch] : ch;
+      for (const ch of src) out += Object.prototype.hasOwnProperty.call(conversionMap, ch) ? conversionMap[ch] : ch;
       latin.value = out;
       leftCount.textContent = `${src.length} simvol`;
       rightCount.textContent = `${out.length} simvol`;
@@ -429,7 +446,7 @@
       const dark = theme === 'dark';
       document.documentElement.setAttribute('data-theme', theme);
       document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-      themeIcon.textContent = dark ? '☀️' : '🌙';
+      themeIcon.innerHTML = dark ? icons.sun : icons.moon;
       localStorage.setItem('theme', theme);
     }
 
